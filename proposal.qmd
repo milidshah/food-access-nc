@@ -10,7 +10,6 @@ editor: visual
 
 ```{r}
 #| label: load-pkg
-#| echo: false
 library(tidyverse)
 library(tidymodels)
 library(readr)
@@ -21,35 +20,69 @@ library(vroom)
 ```{r}
 #| label: load-data
 
+# load dataset
+food_access <- vroom("data/Food Access Research Atlas.csv",
+                     na = c("", "NA", "NULL"),
+                     show_col_types = FALSE)
 
-#data_dict_food <- read_csv("data/VariableLookup.csv")
-#problems(food_access)
-
-food_access <- vroom("data/Food Access Research Atlas.csv", na = c("", "NA", "NULL"))
+# load data dictionary to paste into data README.md
+data_dict <- read_csv("data/VariableLookup.csv", show_col_types = FALSE)
 
 food_access |>
-  count(State) |>
+  count(County) |>
   arrange(desc(n))
+
+cbp <- read_csv("data/cbp_resp.csv", show_col_types = FALSE)
+cbp |>
+  filter(fiscal_year==2020) |>
+  count(citizenship) |>
+  arrange(n)
 ```
 
 ## Introduction
 
-...
+### **Section 1: Introduction**
+
+-   An introduction to the subject matter you’re investigating (citing any relevant literature)
+
+-   Statement of a well-developed research question.
+
+-   The motivation for your research question and why it is important
+
+-   Your hypotheses regarding the research question
+
+    -   This is a narrative about what you think regarding the research question, not formal statistical hypotheses.
 
 ## Data description
 
-...
+### **Section 2: Data description**
+
+-   The source of the data set
+
+-   A description of when and how the data were originally collected (by the original data curator, not necessarily how you found the data)
+
+-   A description of the observations and general characteristics being measured
 
 ## Data processing
 
-...
+### **Section 3: Data processing**
+
+Description of data processing you need to do to prepare for analysis, such as joining multiple data sets, handling missing data, etc.
 
 ## Analysis approach
 
-...
+### **Section 4: Analysis approach**
+
+-   Visualizations, summary statistics, and narrative to describe the distribution of the [**response**]{.underline} variable.
+
+-   A description of the potential predictor variables of interest
+
+-   Regression model technique (multiple linear regression for quantitative response variable or logistic regression for a categorical response variable)
+
+-   
 
 ## Data dictionary
 
-The data dictionary can be found [here](ADD%20LINK!!!) \[Update the link and remove this note!\]
+The data dictionary can be found [here](data/README.md) \[Update the link and remove this note!\]
 
 ## AI Disclosure

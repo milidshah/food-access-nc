@@ -1,35 +1,37 @@
 # Data
 
-This data is obtained from the USDA's 2019 food access research atlas: <https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data>. The atlas provides an overview of food access data for populations counted within the census with variables specifically measuring supermarket accessibility.
+This data is obtained from the USDA's 2019 food access research atlas: <https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data>. The atlas provides an overview of food access data for populations counted within the census with variables assessing different aspects of supermarket accessibility. This dataset is compiled using data from the 2010 Census, the 2014-18 American Community Survey (ACS), and a 2019 list of supermarkets.
 
-## Food Access Research Atlas 2019 (From USDA)
+Economic Research Service (ERS), U.S. Department of Agriculture (USDA). [Food Access Research Atlas](https://www.ers.usda.gov/data-products/food-access-research-atlas "Food Access Research Atlas"), <https://www.ers.usda.gov/data-products/food-access-research-atlas/>
+
+## USDA 2019 Food Access Research Atlas
 
 | Variable | LongName | Description |
-|:----------------|:----------------|:-------------------------------------|
+|:---|:---|:---|
 | CensusTract | Census tract | Census tract number |
 | State | State | State name |
 | County | County | County name |
 | Urban | Urban tract | Flag for urban tract |
 | POP2010 | Population, tract total | Population count from 2010 census |
 | OHU2010 | Housing units, total | Occupied housing unit count from 2010 census |
-| GroupQuartersFlag | Group quarters, tract with high share | Flag for tract where \>=67% |
+| GroupQuartersFlag | Group quarters, tract with high share | Flag for tract where \>=67% live in group quarters, |
 | NUMGQTRS | Group quarters, tract population residing in, number | Count of tract population residing in group quarters |
 | PCTGQTRS | Group quarters, tract population residing in, share | Percent of tract population residing in group quarters |
-| LILATracts_1And10 | Low income and low access tract measured at 1 mile for urban areas and 10 miles for rural areas | Flag for low-income and low access when considering low accessibilty at 1 and 10 miles |
-| LILATracts_halfAnd10 | Low income and low access tract measured at 1/2 mile for urban areas and 10 miles for rural areas | Flag for low-income and low access when considering low accessibilty at 1/2 and 10 miles |
-| LILATracts_1And20 | Low income and low access tract measured at 1 mile for urban areas and 20 miles for rural areas | Flag for low-income and low access when considering low accessibilty at 1 and 20 miles |
-| LILATracts_Vehicle | Low income and low access tract using vehicle access or low income and low access tract measured at 20 miles | Flag for low-income and low access when considering vehicle access or at 20 miles |
+| LILATracts_1And10 | Low income and low access tract measured at 1 mile for urban areas and 10 miles for rural areas | Flag for low-income tract with at least 500 people, or 33 percent of the population living more than 1 mile (urban areas) or more than 10 miles (rural areas) from the nearest supermarket, supercenter, or large grocery store. |
+| LILATracts_halfAnd10 | Low income and low access tract measured at 1/2 mile for urban areas and 10 miles for rural areas | Flag for low-income tract with at least 500 people, or 33 percent of the population living more than 1/2 mile (urban areas) or more than 10 miles (rural areas) from the nearest supermarket, supercenter, or large grocery store. |
+| LILATracts_1And20 | Low income and low access tract measured at 1 mile for urban areas and 20 miles for rural areas | Flag for low-income tract with at least 500 people, or 33 percent of the population living more than 1 mile (urban areas) or more than 20 miles (rural areas) from the nearest supermarket, supercenter, or large grocery store. |
+| LILATracts_Vehicle | Low income and low access tract using vehicle access or low income and low access tract measured at 20 miles | Flag for low-income tract where at least one of the following is true: at least 100 households are located more than 1/2 mile from the nearest supermarket and have no vehicle access; or at least 500 people, or 33 percent of the population, live more than 20 miles from the nearest supermarket, regardless of vehicle availability. |
 | HUNVFlag | Vehicle access, tract with low vehicle access | Flag for tract where \>= 100 of households do not have a vehicle, and beyond 1/2 mile from supermarket |
 | LowIncomeTracts | Low income tract | Flag for low income tract |
 | PovertyRate | Tract poverty rate | Share of the tract population living with income at or below the Federal poverty thresholds for family size |
 | MedianFamilyIncome | Tract median family income | Tract median family income |
-| LA1and10 | Low access tract at 1 mile for urban areas and 10 miles for rural areas | Flag for low access tract at 1 mile for urban areas or 10 miles for rural areas |
-| LAhalfand10 | Low access tract at 1/2 mile for urban areas and 10 miles for rural areas | Flag for low access tract at 1/2 mile for urban areas or 10 miles for rural areas |
-| LA1and20 | Low access tract at 1 mile for urban areas and 20 miles for rural areas | Flag for low access tract at 1 mile for urban areas or 20 miles for rural areas |
-| LATracts_half | Low access tract at 1/2 mile | Flag for low access tract when considering 1/2 mile distance |
-| LATracts1 | Low access tract at 1 mile | Flag for low access tract when considering 1 mile distance |
-| LATracts10 | Low access tract at 10 miles | Flag for low access tract when considering 10 mile distance |
-| LATracts20 | Low access tract at 20 miles | Flag for low access tract when considering 20 mile distance |
+| LA1and10 | Low access tract at 1 mile for urban areas and 10 miles for rural areas | Flag for a tract with at least 500 people, or 33 percent of the population, living more than 1 mile (urban areas) or 10 miles (rural areas) from the nearest supermarket, supercenter, or large grocery store. |
+| LAhalfand10 | Low access tract at 1/2 mile for urban areas and 10 miles for rural areas | Flag for a tract with at least 500 people, or 33 percent of the population, living more than 1/2 mile (urban areas) or 10 miles (rural areas) from the nearest supermarket, supercenter, or large grocery store. |
+| LA1and20 | Low access tract at 1 mile for urban areas and 20 miles for rural areas | Flag for a tract with at least 500 people, or 33 percent of the population, living more than 1 mile (urban areas) or 20 miles (rural areas) from the nearest supermarket, supercenter, or large grocery store. |
+| LATracts_half | Low access tract at 1/2 mile | Flag for an urban tract with at least 500 people, or 33 percent of the population, living more than 1/2 mile from the nearest supermarket, supercenter, or large grocery store. |
+| LATracts1 | Low access tract at 1 mile | Flag for an urban tract with at least 500 people, or 33 percent of the population, living more than 1 mile from the nearest supermarket, supercenter, or large grocery store. |
+| LATracts10 | Low access tract at 10 miles | Flag for an urban tract with at least 500 people, or 33 percent of the population, living more than 10 miles from the nearest supermarket, supercenter, or large grocery store. |
+| LATracts20 | Low access tract at 20 miles | Flag for an urban tract with at least 500 people, or 33 percent of the population, living more than 20 miles from the nearest supermarket, supercenter, or large grocery store. |
 | LATractsVehicle_20 | Low access tract using vehicle access and at 20 miles in rural areas | Flag for tract where \>= 100 of households do not have a vehicle, and beyond 1/2 mile from supermarket; or \>= 500 individuals are beyond 20 miles from supermarket ; or \>= 33% of individuals are beyond 20 miles from supermarket |
 | LAPOP1_10 | Low access, population at 1 mile for urban areas and 10 miles for rural areas, number | Population count beyond 1 mile for urban areas or 10 miles for rural areas from supermarket |
 | LAPOP05_10 | Low access, population at 1/2 mile for urban areas and 10 miles for rural areas, number | Population count beyond 1/2 mile for urban areas or 10 miles for rural areas from supermarket |
