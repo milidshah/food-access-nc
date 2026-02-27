@@ -1,13 +1,14 @@
 # Data
 
-This data is obtained from the USDA's 2019 food access research atlas: <https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data>. The atlas provides an overview of food access data for populations counted within the census with variables assessing different aspects of supermarket accessibility. This dataset is compiled using data from the 2010 Census, the 2014-18 American Community Survey (ACS), and a 2019 list of supermarkets.
+This data is obtained from the USDA's [2019 Food Access Research Atlas](https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data). The atlas provides an overview of accessibility to healthy and affordable food sources in the U.S. This dataset is compiled using data from the 2010 Census, the 2014-18 American Community Survey (ACS), and a 2019 list of supermarkets.
 
-Economic Research Service (ERS), U.S. Department of Agriculture (USDA). [Food Access Research Atlas](https://www.ers.usda.gov/data-products/food-access-research-atlas "Food Access Research Atlas"), <https://www.ers.usda.gov/data-products/food-access-research-atlas/>
+[Data set and data dictionary citation:]{.underline} \
+Economic Research Service (ERS), U.S. Department of Agriculture (USDA). [Food Access Research Atlas](https://www.ers.usda.gov/data-products/food-access-research-atlas "Food Access Research Atlas"), [https://www.ers.usda.gov/data-products/food-access-research-atlas/](#0){.uri}
 
 ## USDA 2019 Food Access Research Atlas
 
-| Variable | LongName | Description |
-|:---|:---|:---|
+| Variable | Long Name | Description |
+|:-----------------------|:-----------------------|:-----------------------|
 | CensusTract | Census tract | Census tract number |
 | State | State | State name |
 | County | County | County name |

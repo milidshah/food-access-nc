@@ -14,6 +14,7 @@ library(tidyverse)
 library(tidymodels)
 library(readr)
 library(vroom)
+library(patchwork)
 
 ```
 
@@ -28,15 +29,7 @@ food_access <- vroom("data/Food Access Research Atlas.csv",
 # load data dictionary to paste into data README.md
 data_dict <- read_csv("data/VariableLookup.csv", show_col_types = FALSE)
 
-food_access |>
-  count(County) |>
-  arrange(desc(n))
-
-cbp <- read_csv("data/cbp_resp.csv", show_col_types = FALSE)
-cbp |>
-  filter(fiscal_year==2020) |>
-  count(citizenship) |>
-  arrange(n)
+food_access
 ```
 
 ## Introduction
@@ -53,21 +46,17 @@ cbp |>
 
     -   This is a narrative about what you think regarding the research question, not formal statistical hypotheses.
 
+Food
+
 ## Data description
 
-### **Section 2: Data description**
+The 2019 Food Access Research Atlas that I will be analyzing is from the USDA Economic Research Service. It provides an overview of food access indicators in the US by measuring variables like supermarket accessibility, race, poverty rate, and median income according to census tracts ([Food Access Research Atlas - About the Atlas](https://www.ers.usda.gov/data-products/food-access-research-atlas/about-the-atlas)). This data set is a combination of data collected by the 2010 Decennial Census, the 2014-18 American Community Survey (ACS), and two 2019 lists of supermarkets, one being from Trade Dimensions TDLinx. The 2010 Census provided population data relating to age, race, income, poverty rate, and residence in group quarters. The 2014-18 ACS contributed information about income, vehicle availability, and SNAP participation. Finally, two lists of supermarkets, supercenters, and large grocery stores were combined to produce a list of stores that have nutritious and affordable food. This data was then used to compute the variables that communicate the distance that one lives from a grocery store ([Food Access Research Atlas - Documentation](https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation#data)).
 
--   The source of the data set
-
--   A description of when and how the data were originally collected (by the original data curator, not necessarily how you found the data)
-
--   A description of the observations and general characteristics being measured
+Each observation in the data represents an individual census tract measured by the 2010 US Census and uniquely identified by the `CensusTract` variable. Generally, this dataset measures food store access for individuals and for neighborhoods, using different variables to measure low income and low access communities that lack access to healthy food sources. Most of the measures include measures of accessibility to sources of healthy food (by distance to a store), individual resources that impact accessibility (vehicle availability or income), and neighborhood level indicators of resources (public transporation, average income) ([Food Access Research Atlas - About the Atlas](https://www.ers.usda.gov/data-products/food-access-research-atlas/about-the-atlas)).
 
 ## Data processing
 
-### **Section 3: Data processing**
-
-Description of data processing you need to do to prepare for analysis, such as joining multiple data sets, handling missing data, etc.
+This data set currently has 72,531 observations representing the number of Census tracts in the 2010 U.S. Census. Training a regression model on too many observations, however, poses a risk of overfitting. The model has the potential to learn random noise and thereby ignore the true pattern underlying the data. It can also make statistical significance tests too sensitive, resulting in "statistically significant" differences when there were likely not any. To address this issue, I will take a random sample of 500 observations from the data set. This smaller sample via randomization also seeks to avoid the issue of spatial dependence, since census tracts near each other are likely to have similar data. In addition to reducing the size of my data set, I also plan to convert the indicator predictor variables of interest to categorical variables. Currently, the data has marked each variable except State and County as numeric. However, variables like `Urban`, which simply display if a tract is urban or not, should be represented as a factor with two levels. Once I convert these variables into categorical predictors, my regression model and data visualizations will be interpretable. Finally, I will address the issue of missing data. There are 29,957 missing observations in the `LALOWI1_10` predictor variable alone. In order to address the number of missing observations, I plan to drop all the n/a values in my data set. I propose taking this approach rather than setting the n/a values to 0 because in cases like with `LALOWI1_10`, a value of 0 represents that 0 people in a Census tract were considered low income and living far from a supermarket. This is not entirely plausible, as it may be the case that a tract does not have data simply because they were not sampled. Furthermore, since so many values are missing from the data set, converting them all to 0 could significantly skew the model's predictions.
 
 ## Analysis approach
 
@@ -75,11 +64,46 @@ Description of data processing you need to do to prepare for analysis, such as j
 
 -   Visualizations, summary statistics, and narrative to describe the distribution of the [**response**]{.underline} variable.
 
+    -   LALOWI1_10 - Low income population count beyond 1 mile for urban areas or 10 miles for rural areas from supermarket
+
 -   A description of the potential predictor variables of interest
 
 -   Regression model technique (multiple linear regression for quantitative response variable or logistic regression for a categorical response variable)
 
--   
+```{r}
+#| warning: false
+
+# summary statistics
+summary <- food_access |>
+  summarise(
+    min = min(LALOWI1_10, na.rm = TRUE),
+    Q1 = quantile(LALOWI1_10, 0.25, na.rm=TRUE),
+    median = median(LALOWI1_10, na.rm = TRUE),
+    mean = mean(LALOWI1_10, na.rm = TRUE),
+    Q3 = quantile(LALOWI1_10, 0.75, na.rm=TRUE),
+    sd = sd(LALOWI1_10, na.rm = TRUE),
+    IQR = Q3 - Q1,
+    max = max(LALOWI1_10, na.rm = TRUE),
+    # following line from https://stackoverflow.com/questions/29076536/
+    # how-can-i-count-number-of-na-values-in-dataset
+    n_missing = sum(is.na(LALOWI1_10))
+  )
+
+# visualize distribution of response var LALOWI1_10 - ind food access
+p1 <- food_access |>
+  ggplot(aes(x=LALOWI1_10)) +
+  geom_histogram(bins=30) +
+  labs(title = "Distribution of Low Income Population with Low Supermarket Access",
+       x = "Number of people",
+       y = "Count",
+       subtitle = "by 2010 U.S. Census Tract") +
+  xlim(summary$min, (summary$median + summary$IQR)) +
+  ylim(0, 4000)
+
+food_access |>
+  drop_na() |>
+  distinct(State)
+```
 
 ## Data dictionary
 
