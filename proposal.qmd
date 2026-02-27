@@ -15,6 +15,7 @@ library(tidymodels)
 library(readr)
 library(vroom)
 library(patchwork)
+library(knitr)
 
 ```
 
@@ -22,6 +23,12 @@ library(patchwork)
 #| label: load-data
 
 # load dataset
+
+# vroom function from: 
+# https://cran.r-project.org/web/packages/vroom/vroom.pdf#:~:text
+# =include_na%20If%20TRUE%20and%20the%20data%20contains,A%20format%20specification.
+# %20If%20set%20to%20%22%22:
+
 food_access <- vroom("data/Food Access Research Atlas.csv",
                      na = c("", "NA", "NULL"),
                      show_col_types = FALSE)
@@ -49,7 +56,7 @@ Food
 
 ## Data description
 
-The 2019 Food Access Research Atlas that I will be analyzing is from the USDA Economic Research Service. It provides an overview of food access indicators in the US by measuring variables like supermarket accessibility, race, poverty rate, and median income according to census tracts ([Food Access Research Atlas - About the Atlas](https://www.ers.usda.gov/data-products/food-access-research-atlas/about-the-atlas)). This data set is a combination of data collected by the 2010 Decennial Census, the 2014-18 American Community Survey (ACS), and two 2019 lists of supermarkets, one being from Trade Dimensions TDLinx. The 2010 Census provided population data relating to age, race, income, poverty rate, and residence in group quarters. The 2014-18 ACS contributed information about income, vehicle availability, and SNAP participation. Finally, two lists of supermarkets, supercenters, and large grocery stores were combined to produce a list of stores that have nutritious and affordable food. This data was then used to compute the variables that communicate the distance that one lives from a grocery store ([Food Access Research Atlas - Documentation](https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation#data)).
+The 2019 Food Access Research Atlas that I will be analyzing is from the USDA Economic Research Service. It provides an overview of food access indicators in the US by measuring variables like supermarket accessibility, race, poverty rate, and median income according to census tracts ([Food Access Research Atlas - About the Atlas](https://www.ers.usda.gov/data-products/food-access-research-atlas/about-the-atlas)). This data set is a combination of data collected by the 2010 Decennial Census, the 2014-18 American Community Survey (ACS), and two 2019 lists of supermarkets, one being from Trade Dimensions TDLinx. The 2010 Census provided population data relating to age, race, income, poverty rate, and residence in group quarters. The 2014-18 ACS contributed information about income, vehicle availability, and SNAP participation. Finally, two lists of grocery stores were combined to produce a list of stores that have nutritious and affordable food. This data was then used to compute the variables that communicate the distance that one lives from a grocery store ([Food Access Research Atlas - Documentation](https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation#data)).
 
 Each observation in the data represents an individual census tract measured by the 2010 US Census and uniquely identified by the `CensusTract` variable. Generally, this dataset measures food store access for individuals and for neighborhoods, using different variables to measure low income and low access communities that lack access to healthy food sources. Most of the measures include measures of accessibility to sources of healthy food (by distance to a store), individual resources that impact accessibility (vehicle availability or income), and neighborhood level indicators of resources (public transporation, average income) ([Food Access Research Atlas - About the Atlas](https://www.ers.usda.gov/data-products/food-access-research-atlas/about-the-atlas)).
 
@@ -68,6 +75,18 @@ Finally, I will address the issue of missing data. There are 29,957 missing obse
 -   Visualizations, summary statistics, and narrative to describe the distribution of the [**response**]{.underline} variable.
 
     -   LALOWI1_10 - Low income population count beyond 1 mile for urban areas or 10 miles for rural areas from supermarket
+
+    The response variable `LALOWI1_10` represents the "low-income population count beyond 1 mile for urban areas or 10 miles for rural areas from \[the\] supermarket" ([data dictionary](data/README.md)). The USDA defines a food desert as a low-income census tract where a substantial amount of residents lack adequate access to healthy and affordable food. Specifically, census tracts meet this criteria when low income is defined as a poverty rate of 20% or higher and when low access is defined by at least 500 people or at least 33% of the population living more than 1 mile from a supermarket in urban areas or more than 10 miles in rural areas. This definition matches that of `LALOWI1_10` , so I propose using `LALOWI1_10` to represent population living in a food desert.
+
+    The histogram displays a unimodal, right-skewed distribution, indicating that most census tracts have relatively small low-income populations living far from a supermarket. The long right tail suggests that while a small number of tracts have very high counts, the majority are concentrated at lower values. Due to this skew
+
+Census tracts qualify as food deserts if they meet low-income and low-access thresholds:
+
+-   Low-income: a poverty rate of 20 percent or greater, or a median family income at or below 80 percent of the statewide or metropolitan area median family income;
+
+-   Low-access: at least 500 persons and/or at least 33 percent of the population lives more than 1 mile from a supermarket or large grocery store (10 miles, in the case of rural census tracts).
+
+Low-income census tracts with a substantial number or share of residents with low levels of access to retail outlets selling healthy and affordable foods are defined as food deserts
 
 -   A description of the potential predictor variables of interest
 
@@ -103,9 +122,7 @@ p1 <- food_access |>
   xlim(summary$min, (summary$median + summary$IQR)) +
   ylim(0, 4000)
 
-food_access |>
-  drop_na() |>
-  distinct(State)
+summary
 ```
 
 ## Data dictionary
