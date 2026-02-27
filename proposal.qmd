@@ -70,28 +70,6 @@ Finally, I will address the issue of missing data. There are 29,957 missing obse
 
 ## Analysis approach
 
-### **Section 4: Analysis approach**
-
--   Visualizations, summary statistics, and narrative to describe the distribution of the [**response**]{.underline} variable.
-
-    -   LALOWI1_10 - Low income population count beyond 1 mile for urban areas or 10 miles for rural areas from supermarket
-
-    The response variable `LALOWI1_10` represents the "low-income population count beyond 1 mile for urban areas or 10 miles for rural areas from \[the\] supermarket" ([data dictionary](data/README.md)). The USDA defines a food desert as a low-income census tract where a substantial amount of residents lack adequate access to healthy and affordable food. Specifically, census tracts meet this criteria when low income is defined as a poverty rate of 20% or higher and when low access is defined by at least 500 people or at least 33% of the population living more than 1 mile from a supermarket in urban areas or more than 10 miles in rural areas. This definition matches that of `LALOWI1_10` , so I plan on using `LALOWI1_10` to represent the number of people in a census tract living in a food desert.
-
-    The histogram displays a unimodal, right-skewed distribution, indicating that most census tracts have relatively small low-income populations living far from a supermarket. The long right tail suggests that while a small number of tracts have very high counts, the majority are concentrated at lower values. Due to the skew, the mean is not an accurate indicator of the center of the distribution. Thus, the median of 228 suggests that in a typical census tract, about 228 low income residents live beyond 1 mile (urban) or 10 miles (rural) from a supermarket.
-
-Census tracts qualify as food deserts if they meet low-income and low-access thresholds:
-
--   Low-income: a poverty rate of 20 percent or greater, or a median family income at or below 80 percent of the statewide or metropolitan area median family income;
-
--   Low-access: at least 500 persons and/or at least 33 percent of the population lives more than 1 mile from a supermarket or large grocery store (10 miles, in the case of rural census tracts).
-
-Low-income census tracts with a substantial number or share of residents with low levels of access to retail outlets selling healthy and affordable foods are defined as food deserts
-
--   A description of the potential predictor variables of interest
-
--   Regression model technique (multiple linear regression for quantitative response variable or logistic regression for a categorical response variable)
-
 ```{r}
 #| warning: false
 
@@ -114,16 +92,35 @@ summary <- food_access |>
 # visualize distribution of response var LALOWI1_10 - ind food access
 p1 <- food_access |>
   ggplot(aes(x=LALOWI1_10)) +
-  geom_histogram(bins=30) +
+  geom_histogram(bins=25) +
   labs(title = "Distribution of Low Income Population with Low Supermarket Access",
        x = "Number of people",
        y = "Count",
-       subtitle = "by 2010 U.S. Census Tract") +
-  xlim(summary$min, (summary$median + summary$IQR)) +
-  ylim(0, 4000)
+       subtitle = "by 2010 U.S. Census Tract")
+
+p2 <- food_access |>
+  ggplot(aes(x=LALOWI1_10)) +
+  geom_density() +
+  labs(title = "Distribution of Low Income Population with Low Supermarket Access",
+       x = "Number of people",
+       y = "Count",
+       subtitle = "by 2010 U.S. Census Tract")
 
 summary
+p1 + p2
 ```
+
+The response variable `LALOWI1_10` represents the "low-income population count beyond 1 mile for urban areas or 10 miles for rural areas from \[the\] supermarket" ([data dictionary](data/README.md)). The USDA defines a food desert as a low-income census tract where a substantial amount of residents lack adequate access to healthy and affordable food. Specifically, census tracts meet this criteria when low income is defined as a poverty rate of 20% or higher and when low access is defined by at least 500 people or at least 33% of the population living more than 1 mile from a supermarket in urban areas or more than 10 miles in rural areas. This definition matches that of `LALOWI1_10` , so I plan on using `LALOWI1_10` to represent the number of people in a census tract living in a food desert.
+
+The histogram displays a unimodal, right-skewed distribution, indicating that most census tracts have relatively small low-income populations living far from a supermarket. The long right tail suggests that while a small number of tracts have very high counts, the majority are concentrated at lower values. Due to the skew, the mean is not an accurate indicator of the center of the distribution. Thus, the median of 228 suggests that in a typical census tract, about 228 low-income residents live beyond 1 mile (urban) or 10 miles (rural) from a supermarket. The spread of the data is about 556 and most of the data (middle 50%) is between 49 people and 605 people living in a food desert in a census tract. There is a minimum of 0 people and a maximum of 9402 people in a census tract living in a desert track. There are a couple outliers in the data at census tracts with more than 4000 low-income people living with little access to healthy food. Though the histogram doesn't show these outliers, we can look to the density plot and the summary statistics to understand that outliers exist outside the bins on the histogram plot.
+
+To analyze the factors that influence the size of the low-income population living far from healthy food (`LALOWI1_10`), I plan to examine `PovertyRate`, `Urban` , `lasnap1share` , `lahunv1share` , `laseniors1share` ,
+
+, and \[z\] as potential predictors
+
+-   A description of the potential predictor variables of interest
+
+-   Regression model technique (multiple linear regression for quantitative response variable or logistic regression for a categorical response variable)
 
 ## Data dictionary
 
