@@ -12,6 +12,20 @@ editor: visual
 
 ```{r}
 #| label: load-pkg-data
+#| echo: false 
+#| message: false
+
+library(tidyverse)
+library(tidymodels)
+library(readr)
+library(vroom)
+library(patchwork)
+library(knitr)
+library(rstatix)
+
+food_access <- vroom("data/Food Access Research Atlas.csv",
+                     na = c("", "NA", "NULL"),
+                     show_col_types = FALSE)
 
 ```
 
@@ -20,3 +34,174 @@ Your written report goes here!
 ::: callout-important
 Before you submit, make sure your code chunks are turned off with `echo: false` and there are no warnings or messages with `warning: false` and `message: false` in the YAML.
 :::
+
+## Exploratory Data Analysis
+
+in what ways do the poverty rate of a census tract, the number of households receiving SNAP benefits, the number of households without a vehicle, and urban/rural classification, median income influence how many low-income people in a census tract live in a low food access area?
+
+-   Specific to NC
+-   take sample (.2\*2175 = 435) to address independence
+-   took out missing values with `colSums(is.na(food_access_clean))` - only had to delete 4 obs (median fam income)
+
+```{r}
+#| label: clean-data
+
+set.seed(123)
+
+food_access_clean <- food_access |>
+  filter(State=="North Carolina" & !is.na(MedianFamilyIncome)) |>
+  convert_as_factor(Urban,County, State, LILATracts_1And10) |>
+  select(Urban,
+         TractSNAP,
+         TractHUNV,
+         LILATracts_1And10,
+         PovertyRate,
+         MedianFamilyIncome,
+         State,
+         County,
+         CensusTract) |>
+  slice_sample(prop = 0.2)
+
+
+```
+
+```{r}
+#| label: explore-outcome
+#| warning: false
+
+food_access_clean |>
+  ggplot(aes(x=LILATracts_1And10)) +
+  geom_bar() +
+  labs(x = "Food Desert Indicator",
+       y = "Number of Census Tracts",
+       title = "Food Deserts in North Carolina By Census Tract",
+       subtitle = "low income and low access to supermarket areas") 
+
+# find proportion
+food_access_clean |>
+  count(LILATracts_1And10) |>
+  mutate(prop = n/nrow(food_access_clean))
+
+```
+
+```{r}
+#| label: explore-preds
+#| warning: false
+
+# Urban, TractSNAP, TractHUNV,PovertyRate
+
+# explore Urban
+p1<-food_access_clean |>
+  ggplot(aes(x=Urban)) +
+  geom_bar(bins=25) +
+  labs(x = "Urban Indicator", y = "Count")
+
+# explore TractSNAP
+p2<-food_access_clean |>
+  ggplot(aes(x=TractSNAP)) +
+  geom_histogram(bins=25) +
+  labs(x = "Number of housing units receiving SNAP benefits in a tract", y = "Count")
+
+# explore TractHUNV
+p3<-food_access_clean |>
+  ggplot(aes(x=TractHUNV)) +
+  geom_histogram(bins=25) +
+  labs(x = "Number of housing units without a vehicle in a tract", y = "Count")
+
+# explore PovertyRate
+p4<-food_access_clean |>
+  ggplot(aes(x=PovertyRate)) +
+  geom_histogram(bins=25) +
+  labs(x = "Poverty Rate in a tract", y = "Count")
+
+# explore MedianFamilyIncome
+food_access_clean |>
+  ggplot(aes(x=MedianFamilyIncome)) +
+  geom_histogram(bins=25) +
+  labs(x = "Median Family Income in a tract", y = "Count") +
+  scale_x_continuous(labels = scales::label_dollar())
+
+(p1 | p2) / (p3 | p4)
+```
+
+```{r}
+#| label: summary-stats
+
+summary(food_access_clean[c("PovertyRate", 
+                            "TractSNAP", 
+                            "TractHUNV", 
+                            "MedianFamilyIncome"
+                            )])
+```
+
+```{r}
+#| label: response-vs-preds
+#| warning: false
+# 
+# #p1<-food_access_clean|>
+#   ggplot(aes(x=Urban, y=log_LALOWI1_10)) +
+#   geom_boxplot() 
+# 
+# #p2<-food_access_clean |>
+#   ggplot(aes(x=TractSNAP, y=log_LALOWI1_10)) + 
+#   geom_point()
+# 
+# #p3<-food_access_clean |>
+#   ggplot(aes(x=TractHUNV, y=log_LALOWI1_10)) +
+#   geom_point()
+# 
+# #p4<-food_access_clean |>
+#   ggplot(aes(x=PovertyRate, y=log_LALOWI1_10)) +
+#   geom_point()
+# 
+# #pa<-food_access_clean |>
+#   ggplot(aes(x=MedianFamilyIncome, y=log_LALOWI1_10)) +
+#   geom_point()
+# #pb<-food_access_clean |>
+#   ggplot(aes(x=MedianFamilyIncome, y=LALOWI1_10)) +
+#   geom_point()
+# 
+# pa|pb
+# 
+# (p3 | p4)
+```
+
+```{r}
+#| label: mlr
+
+glm_food_access <- glm(LILATracts_1And10 ~ 
+                      Urban +
+                      TractSNAP +
+                      TractHUNV +
+                      MedianFamilyIncome +
+                      PovertyRate,
+                    data = food_access_clean,
+                    family = "binomial")
+
+tidy(glm_food_access) |>
+  kable(digits=3)
+
+```
+
+```{r}
+#| label: interaction-effect
+#food_access_clean |>
+ # ggplot(aes(x=MedianFamilyIncome, y=log_LALOWI1_10, color = Urban)) +
+  #geom_jitter()
+
+
+```
+
+This section includes the following:
+
+-   Description of the data set and key variables.
+
+-   Exploratory data analysis of the response variable and key predictor variables. This includes visualizations, summary statistics, and narrative. Focus on 4 - 6 key predictors that are most relevant to your research question. You may explore additional variables, as appropriate, but prioritize depth over breadth.
+
+    -   Univariate EDA of the response and key predictor variables
+
+    -   Bivariate EDA of the response and key predictor variables
+
+    -   Visualizations exploring at least one potential interaction effect
+
+For each visualization and/or set of summary statistics, briefly describe what you learn about the distribution of the variable or relationship between variables. Additionally, comment on how the observations from the EDA may inform your modeling decisions (e.g., use of transformations, quadratic effects, interactions effects, etc.)
