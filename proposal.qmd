@@ -10,12 +10,14 @@ editor: visual
 
 ```{r}
 #| label: load-pkg
+#| echo: false
 library(tidyverse)
 library(tidymodels)
 library(readr)
 library(vroom)
 library(patchwork)
 library(knitr)
+library(rstatix)
 
 ```
 
@@ -40,7 +42,7 @@ data_dict <- read_csv("data/VariableLookup.csv", show_col_types = FALSE)
 
 ## Introduction
 
-There are [18.8 million](https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation#:~:text=This%20measure%20shows%20that%20an%20estimated%2018.8%20million%20people%2C%20or%206.1%20percent%20of%20the%20U.S.%20population%2C%20live%20in%20low%2Dincome%20and%20low%20access%20tracts%20and%20are%20more%20than%201%20mile%20or%2010%20miles%20from%20a%20supermarket) Americans living in food deserts today — areas with limited access to affordable and nutritious food. The [USDA has defined food deserts](https://www.ers.usda.gov/amber-waves/2011/december/data-feature-mapping-food-deserts-in-the-u-s#:~:text=ERS's%20Food%20Desert%20Locator%20is,are%20defined%20as%20food%20deserts.) to be census tracts that have a poverty rate of 20% or greater (or median family income at the most 80% of statewide family income) and where at least 33% of the population (or at least 500 people) live more than 1 mile from the supermarket in an urban area/ 10 miles in a rural area. Food deserts are created not only due to distance from healthy food sources but also due to structural decisions that have historically limited healthy food access for minority communities. Understanding this issue requires examining how redlining policies institutionalized neighborhood disinvestment, disproportionately exposing low-income and [minority communities to less healthy food environments](https://www.theatlantic.com/ideas/archive/2024/12/food-deserts-robinson-patman/680765/). These disparities carry serious consequences: food deserts are linked to worse health outcomes, including [shorter life expectancy](https://pressroom.cancer.org/releases?item=1237,) and a higher risk for [adverse cardiovascular events](https://pmc.ncbi.nlm.nih.gov/articles/PMC6405658/).). Given these health risks and the disproportionate racial impact of food deserts, it is critical to evaluate what factors contribute to their persistence and how current policy can work toward reversing years of racial residential segregation.
+There are [18.8 million](https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation#:~:text=This%20measure%20shows%20that%20an%20estimated%2018.8%20million%20people%2C%20or%206.1%20percent%20of%20the%20U.S.%20population%2C%20live%20in%20low%2Dincome%20and%20low%20access%20tracts%20and%20are%20more%20than%201%20mile%20or%2010%20miles%20from%20a%20supermarket) Americans living in food deserts today — areas with limited access to affordable and nutritious food. The [USDA has defined food deserts](https://www.ers.usda.gov/amber-waves/2011/december/data-feature-mapping-food-deserts-in-the-u-s#:~:text=ERS's%20Food%20Desert%20Locator%20is,are%20defined%20as%20food%20deserts.) to be census tracts that have a poverty rate of 20% or greater (or median family income at the most 80% of statewide family income) and where at least 33% of the population (or at least 500 people) live more than 1 mile from the supermarket in an urban area/ 10 miles in a rural area. Food deserts are created not only due to distance from healthy food sources but also due to structural decisions that have historically limited healthy food access for minority communities. Understanding this issue requires examining how redlining policies institutionalized neighborhood disinvestment, disproportionately exposing low-income and [minority communities to less healthy food environments](https://www.theatlantic.com/ideas/archive/2024/12/food-deserts-robinson-patman/680765/). These disparities carry serious consequences: food deserts are linked to worse health outcomes, including [shorter life expectancy](https://pressroom.cancer.org/releases?item=1237,) and a higher risk for [adverse cardiovascular events](https://pmc.ncbi.nlm.nih.gov/articles/PMC6405658/). Given these health risks and the disproportionate racial impact of food deserts, it is critical to evaluate what factors contribute to their persistence and how current policy can work toward reversing years of racial residential segregation.
 
 This issue is particularly relevant to us as Duke students, as [9 of the top 10 states with the greatest share of residents living in food deserts are in the South](https://www.ers.usda.gov/data-products/food-access-research-atlas/state-level-estimates-of-low-income-and-low-access-populations). This proximity makes understanding the structural drivers of food deserts a matter of community concern. Thus, I seek to answer the following question: in what ways do the poverty rate of a census tract, the number of households receiving SNAP benefits, the number of households without a vehicle, and urban/rural classification influence how many low-income people in a census tract live in a low food access area?
 
@@ -54,7 +56,7 @@ Each observation in the data represents an individual census tract measured by t
 
 ## Data processing
 
-This data set currently has 72,531 observations representing the number of Census tracts in the 2010 U.S. Census. Training a regression model on too many observations, however, poses a risk of overfitting. The model has the potential to learn random noise and thereby ignore the true pattern underlying the data. It can also make statistical significance tests too sensitive, resulting in "statistically significant" differences when there were likely not any. To address this issue, I will take a random sample of 500 observations from the data set. This smaller sample via randomization also seeks to avoid the issue of spatial dependence, since census tracts near each other are likely to have similar data.
+This data set currently has 72,531 observations representing the number of Census tracts in the 2010 U.S. Census. Training a regression model on too many observations can make statistical significance tests too sensitive, resulting in "statistically significant" differences when there were likely not any. To address this issue, I will take a random sample of 500 observations from the data set. This smaller sample via randomization also seeks to avoid the issue of spatial dependence, since census tracts near each other are likely to have similar data.
 
 In addition to reducing the size of my data set, I also plan to convert the indicator predictor variables of interest to categorical variables. Currently, the data has marked each variable except `State` and `County` as numeric. However, variables like `Urban`, which simply display if a tract is urban or not, should be represented as a factor with two levels. Once I convert these variables into categorical predictors, my regression model and data visualizations will be interpretable.
 
@@ -109,6 +111,166 @@ To analyze the factors that influence the size of the low-income population livi
 ## Data dictionary
 
 The data dictionary can be found [here](https://github.com/sta210-sp26/project-milidshah/blob/main/data/README.md).
+
+## Exploratory Data Analysis
+
+in what ways do the poverty rate of a census tract, the number of households receiving SNAP benefits, the number of households without a vehicle, and urban/rural classification influence how many low-income people in a census tract live in a low food access area?
+
+-   Specific to NC
+
+```{r}
+#| label: clean-data
+
+food_access_clean <- food_access |>
+  filter(State=="North Carolina") |>
+  convert_as_factor(Urban,County, State) |>
+  select(Urban,
+         TractSNAP,
+         TractHUNV,
+         LALOWI1_10,
+         PovertyRate,
+         MedianFamilyIncome,
+         State,
+         County,
+         CensusTract) |>
+  mutate(
+    log_LALOWI1_10 = log(LALOWI1_10)
+  )
+
+```
+
+```{r}
+#| label: explore-outcome
+#| warning: false
+food_access_clean |>
+  ggplot(aes(x=log_LALOWI1_10)) +
+  geom_histogram(bins=25) +
+  labs(x = "Number of people", y = "Count")
+
+```
+
+```{r}
+#| label: explore-preds
+#| warning: false
+
+# Urban, TractSNAP, TractHUNV, LALOWI1_10, PovertyRate
+
+# explore Urban
+p1<-food_access_clean |>
+  ggplot(aes(x=Urban)) +
+  geom_bar(bins=25) +
+  labs(x = "Urban Indicator", y = "Count")
+
+# explore TractSNAP
+p2<-food_access_clean |>
+  ggplot(aes(x=TractSNAP)) +
+  geom_histogram(bins=25) +
+  labs(x = "Number of housing units receiving SNAP benefits in a tract", y = "Count")
+
+# explore TractHUNV
+p3<-food_access_clean |>
+  ggplot(aes(x=TractHUNV)) +
+  geom_histogram(bins=25) +
+  labs(x = "Number of housing units without a vehicle in a tract", y = "Count")
+
+# explore PovertyRate
+p4<-food_access_clean |>
+  ggplot(aes(x=PovertyRate)) +
+  geom_histogram(bins=25) +
+  labs(x = "Poverty Rate in a tract", y = "Count")
+
+# explore MedianFamilyIncome
+food_access_clean |>
+  ggplot(aes(x=MedianFamilyIncome)) +
+  geom_histogram(bins=25) +
+  labs(x = "Median Family Income in a tract", y = "Count") +
+  scale_x_continuous(labels = scales::label_dollar())
+
+(p1 | p2) / (p3 | p4)
+```
+
+```{r}
+#| label: summary-stats
+
+summary(food_access_clean[c("PovertyRate", 
+                            "TractSNAP", 
+                            "TractHUNV", 
+                            "MedianFamilyIncome",
+                            "LALOWI1_10",
+                            "log_LALOWI1_10"
+                            )])
+```
+
+```{r}
+#| label: response-vs-preds
+#| warning: false
+
+p1<-food_access_clean|>
+  ggplot(aes(x=Urban, y=log_LALOWI1_10)) +
+  geom_boxplot() 
+
+p2<-food_access_clean |>
+  ggplot(aes(x=TractSNAP, y=log_LALOWI1_10)) + 
+  geom_point()
+
+p3<-food_access_clean |>
+  ggplot(aes(x=TractHUNV, y=log_LALOWI1_10)) +
+  geom_point()
+
+p4<-food_access_clean |>
+  ggplot(aes(x=PovertyRate, y=log_LALOWI1_10)) +
+  geom_point()
+
+pa<-food_access_clean |>
+  ggplot(aes(x=MedianFamilyIncome, y=log_LALOWI1_10)) +
+  geom_point()
+pb<-food_access_clean |>
+  ggplot(aes(x=MedianFamilyIncome, y=LALOWI1_10)) +
+  geom_point()
+
+pa|pb
+
+(p1 | p2)/(p3 | p4)
+```
+
+```{r}
+#| label: mlr
+
+lm_food_access <- lm(LALOWI1_10 ~ 
+                      Urban +
+                      TractSNAP +
+                      TractHUNV +
+                      MedianFamilyIncome +
+                      PovertyRate,
+                    data = food_access_clean)
+
+tidy(lm_food_access) |>
+  kable(digits=3)
+
+```
+
+```{r}
+#| label: interaction-effect
+food_access_clean |>
+  ggplot(aes(x=MedianFamilyIncome, y=log_LALOWI1_10, color = Urban)) +
+  geom_jitter()
+
+
+```
+
+This section includes the following:
+
+-   Description of the data set and key variables.
+
+-   Exploratory data analysis of the response variable and key predictor variables. This includes visualizations, summary statistics, and narrative. Focus on 4 - 6 key predictors that are most relevant to your research question. You may explore additional variables, as appropriate, but prioritize depth over breadth.
+
+    -   Univariate EDA of the response and key predictor variables
+
+    -   Bivariate EDA of the response and key predictor variables
+
+    -   Visualizations exploring at least one potential interaction effect
+
+For each visualization and/or set of summary statistics, briefly describe what you learn about the distribution of the variable or relationship between variables. Additionally, comment on how the observations from the EDA may inform your modeling decisions (e.g., use of transformations, quadratic effects, interactions effects, etc.)
 
 ## AI Disclosure
 
