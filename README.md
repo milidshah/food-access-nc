@@ -1,3 +1,3 @@
-# Project title
-by Team name
+# Food Access in North Carolina
+by Mili Shah
 

@@ -24,6 +24,7 @@ library(knitr)
 library(rstatix)
 library(tigris)
 library(sf)
+library(rms)
 
 food_access <- vroom("data/Food Access Research Atlas.csv",
                      na = c("", "NA", "NULL"),
@@ -84,6 +85,9 @@ food_access_clean <- food_access |>
 #| label: explore-outcome
 #| warning: false
 #| message: false
+
+options(tigris_use_cache = TRUE)
+options(tigris_progress = FALSE)
 
 food_access_clean |>
   ggplot(aes(x=LILATracts_1And10)) +
@@ -162,7 +166,8 @@ p4<-food_access_clean |>
   geom_histogram(bins=25) +
   labs(title = "Poverty Rate in a tract", 
        y = "Number of Census Tracts",
-       x = "Poverty Rate")
+       x = "Poverty Rate") +
+  scale_x_continuous(labels = scales::label_number(suffix = "%"))
 
 # explore MedianFamilyIncome
 p5<-food_access_clean |>
@@ -200,7 +205,7 @@ The distribution for `TractSNAP` shows a center around 188, meaning 188 housing 
 
 `TractHUNV` has a center of around 80 housing units in a census tract without access to a vehicle. This is surprisingly low but realistic since a car is a necessity in most parts of NC due to the state's lack of public transportation infrastructure. Similar to before, there are a few outliers observed above 400 housing units in a tract without access to a vehicle. The relatively smaller spread (IQR=11) is in line with our understanding of NC's public infrastructure and the necessity of a vehicle, regardless of income status.
 
-Finally, `MedianFamilyIncome` has a distribution very similar to `PovertyRate` , which is not unexpected since both are roughly measuring the economics state of a census tract. There is a center around \$61,500 median family income per census tract, much lower than the [US's ](https://fred.stlouisfed.org/series/MEHOINUSA646N)\$83,000 median household income. The spread of the distribution (IQR) is about \$20,000, with outliers above median family incomes of \$150,000.
+Finally, `MedianFamilyIncome` has a distribution very similar to `PovertyRate` , which is not unexpected since both are roughly measuring the economics state of a census tract. There is a center around \$61,500 median family income per census tract, much lower than the [US's](https://fred.stlouisfed.org/series/MEHOINUSA646N)\$83,000 median household income. The spread of the distribution (IQR) is about \$20,000, with outliers above median family incomes of \$150,000.
 
 Since each of these exhibits a substantial right skew and a couple of outliers, I will use metrics like Cook's distance to decide if points are influential and are harming the model's predictive capabilities. Furthermore, I will check whether these predictors need to be log transformed to represent a nonlinear relationship and account for the skew by comparing the adjusted R\^2 of models with different predictors transformed.
 
@@ -261,23 +266,6 @@ Finally, the facet plot shows very interesting and potentially significantly dif
 #| label: interaction
 #| message: false
 
-glm_interact <- glm(LILATracts_1And10 ~ 
-                     MedianFamilyIncome * Urban +
-                     TractSNAP +
-                     TractHUNV +
-                     PovertyRate,
-                   data = food_access_clean,
-                   family = "binomial")
-
-glm_food_access <- glm(LILATracts_1And10 ~ 
-                         MedianFamilyIncome + 
-                         Urban + 
-                         TractSNAP +
-                         TractHUNV +
-                         PovertyRate,
-                       data = food_access_clean,
-                       family = "binomial")
-
 # plot pred probs of food desert and median income by urbanicity
 ggplot(food_access_clean, aes(x = MedianFamilyIncome, 
                              y = as.numeric(LILATracts_1And10) - 1,
@@ -297,7 +285,90 @@ food_access_clean |>
   geom_boxplot() +
   labs(title = "Income Distribution by Food Desert Status and Urbanicity",
        y = "Median Family Income",
-       x = "Food Desert Classification")
+       x = "Food Desert Classification") +
+  scale_y_continuous(labels = scales::label_dollar())
 ```
 
 In the first plot, we see how higher levels of median family income are linked to higher probabilities of food deserts — in both the lines plotted, regardless of urban classification. However, the plot shows that an interaction between urbanicity and median family income certainly exists because the slopes for the two lines are substantially different. The plot shows that tracts classified as urban have higher probabilities of being food deserts than tracts classified as rural at the same median income. While the lines converge at median family incomes above \$125,000, the initial difference serves as evidence that some of the variability between the probability of a food desert and median family income can be explained by a census tract being urban or rural. The second plot serves to reinforce this assessment. The two groups of boxes for tracts classified as food deserts and those as not are significantly different because the boxes do not overlap across groups. The interaction effect between median family income and urbanicity is especially apparent in the census tracts not classified as food deserts, as the plot shows how rural tracts in non-food deserts have a considerably lower median family income than urban tracts.  Thus, rather than simply seeing how median family income varies according to food desert classification, adding urbanicity creates an additional, important interaction to consider. 
+
+## Methodology
+
+```{r}
+#| label: fit-model
+
+glm_interact <- glm(LILATracts_1And10 ~ 
+                     MedianFamilyIncome * Urban +
+                     TractSNAP +
+                     log1p(TractHUNV) +
+                     PovertyRate,
+                   data = food_access_clean,
+                   family = "binomial")
+
+glm_food_access <- glm(LILATracts_1And10 ~ 
+                         MedianFamilyIncome + 
+                         Urban + 
+                         TractSNAP +
+                         log1p(TractHUNV) +
+                         PovertyRate,
+                       data = food_access_clean,
+                       family = "binomial")
+
+vif(glm_food_access)
+
+vif(glm_interact)
+
+# check if interaction effect improved model
+anova(glm_food_access, glm_interact, test = "Chisq")
+# --> choose glm_food_access
+```
+
+```{r}
+#| label: model-selection
+
+# evaluate model
+food_access_aug <- augment(glm_interact)
+
+# outliers
+food_access_aug |>
+  filter(.cooksd > 1)
+
+#calculate AUC
+AUC <- food_access_aug |>
+  roc_auc(LILATracts_1And10, .fitted, event_level = "second")
+
+# AIC
+AIC <- glance(glm_food_access)$AIC
+
+# BIC
+BIC <- glance(glm_food_access)$BIC
+
+
+```
+
+This section describes your modeling approach and the process used to select the final model. Explain the reasoning for the type of model you’re fitting, the predictor variables considered for the model, including any interactions. Additionally, show how you arrived at the model you are currently considering as the final model by describing the model selection process, any variable transformations (if needed), and any other relevant considerations that were part of the model fitting process.
+
+This section should focus on the modeling process rather than the numerical results.
+
+We will fit a logistic regression model to predict what factors contribute to food deserts across counties in North Carolina. This model is best suited for my dataset because I wish to predict whether a specific census tract is or is not classified as a food desert. Since this is represented as a probability of being a food desert, logistic regression will help make such prediction based on various [traditional predictors of food deserts](https://www.ers.usda.gov/amber-waves/2010/march/access-to-affordable-nutritious-food-is-limited-in-food-deserts), such as poverty rates, incomes (with SNAP benefits as an additional metric need aware households), vehicle access, and location (urban/rural).
+
+A drop in deviance test comparing two models — one with an interaction effect between median family income and urbanicity and one without — was not statistically significant. This indicates that the interaction term does not significantly improve model fit. However, computing AIC and BIC showed that the interaction model is slightly preferred. Since my main goal with this project is to build a model that predicts well, I will prioritize the AIC and BIC scores and choose the interaction model, containing predictors `PovertyRate`, `TractSNAP`, `TractHUNV`, and an interaction between `MedianFamilyIncome` and `Urban` .
+
+In addition to including an interaction effect in the model, I have also log transformed `TractHUNV` because the EDA showed the distribution to be unimodal with a strong right skew. Since some values of `TractHUNV` are 0, I used log1p() to keep values=0 at 0 since log(0) is undefined. Adjusting for the skew could illuminate nonlinear relationships helpful in predicting the likelihood of food desert presence. Though the histogram for `TractSNAP` was also right-skewed, I did not transform the variable because its bimodal distribution and some data points concentrated even at the wings of the graph suggested that capturing the pattern of the data in its entirety would be important for model prediction. Similarly, since some of the variation in `MedianFamilyIncome` could be explained by `Urban` , I included the interaction term and did not log transform the variable. I did not transform `PovertyRate` because there was not an extremely strong right skew that necessitated a transformation. Additionally, since I am prioritizing interpretability, log transforming a percent would not be as understandable.
+
+Finally, I computed Cook's Distance and confirmed that the data does not present and influential outliers that could impact the model's fit. Ultimately, after each of these assessments, I decided to use a logistic regression model with `LILATracts_1AND10` as the response variable and `MedianFamilyIncome x Urban` , `TractSNAP` , `log1p(TractHUNV)` , and `PovertyRate` as the predictors.
+
+## Results
+
+**In this section, you will present the final model and include a brief discussion of the model assumptions, diagnostics, and any relevant model fit statistics.**
+
+**This section also includes initial interpretations of key model coefficients and discussion of inferential conclusions drawn from the model. The goal is not to interpret every single variable in the model but rather to show that you are proficient in using the model output to address the research question, using the interpretations to support your conclusions. Focus on the variables that help you answer the research question and that provide relevant context for the reader.**
+
+do cross validation later
+
+```{r}
+#| label: model-prediction
+
+tidy(glm_interact, exponentiate = TRUE) |>
+  kable(digits=3)
+
+```
