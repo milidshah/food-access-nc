@@ -73,7 +73,10 @@ food_access_clean <- food_access |>
          State,
          County,
          CensusTract) |>
-  mutate(CensusTract = as.character(CensusTract)) |>
+  mutate(CensusTract = as.character(CensusTract),
+         Urban = factor(Urban, levels = c(0, 1), labels = c("Rural", "Urban")),
+         LILATracts_1And10 = factor(LILATracts_1And10, levels = c(0, 1),
+                                    labels = c("Not Food Desert", "Food Desert"))) |>
   slice_sample(prop = 0.2)
 
 
@@ -345,10 +348,6 @@ BIC <- glance(glm_food_access)$BIC
 
 ```
 
-This section describes your modeling approach and the process used to select the final model. Explain the reasoning for the type of model you’re fitting, the predictor variables considered for the model, including any interactions. Additionally, show how you arrived at the model you are currently considering as the final model by describing the model selection process, any variable transformations (if needed), and any other relevant considerations that were part of the model fitting process.
-
-This section should focus on the modeling process rather than the numerical results.
-
 We will fit a logistic regression model to predict what factors contribute to food deserts across counties in North Carolina. This model is best suited for my dataset because I wish to predict whether a specific census tract is or is not classified as a food desert. Since this is represented as a probability of being a food desert, logistic regression will help make such prediction based on various [traditional predictors of food deserts](https://www.ers.usda.gov/amber-waves/2010/march/access-to-affordable-nutritious-food-is-limited-in-food-deserts), such as poverty rates, incomes (with SNAP benefits as an additional metric need aware households), vehicle access, and location (urban/rural).
 
 A drop in deviance test comparing two models — one with an interaction effect between median family income and urbanicity and one without — was not statistically significant. This indicates that the interaction term does not significantly improve model fit. However, computing AIC and BIC showed that the interaction model is slightly preferred. Since my main goal with this project is to build a model that predicts well, I will prioritize the AIC and BIC scores and choose the interaction model, containing predictors `PovertyRate`, `TractSNAP`, `TractHUNV`, and an interaction between `MedianFamilyIncome` and `Urban` .
@@ -363,7 +362,7 @@ Finally, I computed Cook's Distance and confirmed that the data does not present
 
 **This section also includes initial interpretations of key model coefficients and discussion of inferential conclusions drawn from the model. The goal is not to interpret every single variable in the model but rather to show that you are proficient in using the model output to address the research question, using the interpretations to support your conclusions. Focus on the variables that help you answer the research question and that provide relevant context for the reader.**
 
-do cross validation later
+do cross validation later to see how well model generalizes to unseen data
 
 ```{r}
 #| label: model-prediction
@@ -372,3 +371,23 @@ tidy(glm_interact, exponentiate = TRUE) |>
   kable(digits=3)
 
 ```
+
+### Model assumptions and diagnostics
+
+Logistic regression requires that observations are independent, that the log-odds of the outcome have a linear relationship with continuous predictors, and that there is no severe multicollinearity among predictors. The independence assumption is partially addressed by our random 20% sample of North Carolina census tracts, which reduces (though does not eliminate) the spatial dependence among neighboring tracts. Linearity in the log-odds was assessed through the EDA and transformation of `TractHUNV` to address its strong right skew. Regarding multicollinearity, the VIF scores for the additive model were all below about 3, indicating no problematic collinearity among the predictors. The inflated VIFs in the interaction model (MedianFamilyIncome: 20.97, Urban1: 25.31, interaction term: 45.16) are expected to be results of including an interaction term rather than evidence of true multicollinearity. Finally, Cook's distance confirmed no influential outliers that would affect model fit.
+
+### Model Fit
+
+The interaction model was selected over the additive model based on AIC and BIC, despite a non-significant drop-in-deviance test (p = 0.485).The lower AIC suggests the interaction model should predict slightly better, and since the income × urbanicity interaction makes theoretical sense, supported by the data exploration, it is reasonable to keep it.
+
+### Interpretation
+
+While the per-dollar odds ratio appears negligible for median family income, the negative z-statistic confirms that higher income is associated with lower odds of food desert classification. Thus, though the coefficient interpretation is negligible (for each one-unit increase in median family income, the odds that the tract is a food desert are expected to change by approximately 0% on average, holding all else constant), there is at least slight indication by the z statistic that economic resources can be a structural predictor of food access.
+
+TractSNAP is also statistically significant, indicating that for each additional household receiving SNAP benefits in a tract, the odds that the tract is a food desert are expected to increase by 0.3% on average, holding all else constant. This positive association suggests that higher SNAP participation is linked to greater food access limitations, showing that financial assistance alone may not fully address barriers to accessing healthy food.
+
+`PovertyRate` is potentially significant with a p-value of 0.065 in the model and worth investigating. Interestingly, the test statistic is negative, suggesting that an increase in poverty rate is associated with lower odds of a food desert. This pattern contradicts much of the literature on food access and food deserts, so a potential explanation for this direction of change could be collinearity in the model. Regardless, this example demonstrates the importance of interpreting results in context as well as verifying with the literature some examined patterns.
+
+### Conclusions
+
+Altogether, the model suggests that economic measures, such as median family income and SNAP benefit receipt, are the most consistent predictors of food desert classification among North Carolina census tracts. The role of the other predictors is more complex, since the higher p-values do not allow us to comment on the significance of those predictors and patterns they illuminate about food access. Cross-validation will be used to further evaluate the model's predictive performance on unseen data, particularly given the class imbalance of 84% of census tracts being categorized as not a food desert.
