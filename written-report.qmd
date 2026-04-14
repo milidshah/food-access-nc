@@ -290,6 +290,21 @@ food_access_clean |>
        y = "Median Family Income",
        x = "Food Desert Classification") +
   scale_y_continuous(labels = scales::label_dollar())
+
+
+
+ggplot(food_access_clean,
+       aes(x = PovertyRate,
+           y = as.numeric(LILATracts_1And10) - 1,
+           color = TractSNAP)) +
+  geom_smooth(method = "glm",
+              method.args = list(family = "binomial"),
+              se = FALSE,
+              linewidth = 1.2) +
+  labs(title = "Interaction: SNAP × Poverty Rate",
+       y = "Probability of Food Desert",
+       x = "Poverty Rate") +
+  theme_minimal()
 ```
 
 In the first plot, we see how higher levels of median family income are linked to higher probabilities of food deserts — in both the lines plotted, regardless of urban classification. However, the plot shows that an interaction between urbanicity and median family income certainly exists because the slopes for the two lines are substantially different. The plot shows that tracts classified as urban have higher probabilities of being food deserts than tracts classified as rural at the same median income. While the lines converge at median family incomes above \$125,000, the initial difference serves as evidence that some of the variability between the probability of a food desert and median family income can be explained by a census tract being urban or rural. The second plot serves to reinforce this assessment. The two groups of boxes for tracts classified as food deserts and those as not are significantly different because the boxes do not overlap across groups. The interaction effect between median family income and urbanicity is especially apparent in the census tracts not classified as food deserts, as the plot shows how rural tracts in non-food deserts have a considerably lower median family income than urban tracts.  Thus, rather than simply seeing how median family income varies according to food desert classification, adding urbanicity creates an additional, important interaction to consider. 
@@ -304,6 +319,13 @@ glm_interact <- glm(LILATracts_1And10 ~
                      TractSNAP +
                      log1p(TractHUNV) +
                      PovertyRate,
+                   data = food_access_clean,
+                   family = "binomial")
+glm_interact2 <-  glm(LILATracts_1And10 ~ 
+                     MedianFamilyIncome +
+                     Urban +
+                     TractSNAP * PovertyRate +
+                     log1p(TractHUNV),
                    data = food_access_clean,
                    family = "binomial")
 
