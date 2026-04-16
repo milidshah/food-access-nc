@@ -270,7 +270,7 @@ Finally, the facet plot shows very interesting and potentially significantly dif
 #| message: false
 
 # plot pred probs of food desert and median income by urbanicity
-ggplot(food_access_clean, aes(x = MedianFamilyIncome, 
+ggplot(food_access_clean, aes(x = MedianFamilyIncome,
                              y = as.numeric(LILATracts_1And10) - 1,
                              color = Urban)) +
   geom_jitter(alpha = 0.2, height = 0.02) +
@@ -291,34 +291,24 @@ food_access_clean |>
        x = "Food Desert Classification") +
   scale_y_continuous(labels = scales::label_dollar())
 
-
 # interaction between SNAP and poverty rate
-# Remove poverty's influence from SNAP first
-snap_model <- lm(TractSNAP ~ PovertyRate, data = food_access_clean)
 
-food_access_interact <- food_access_clean |>
-  mutate(
-    SNAP_residual = resid(snap_model),  # SNAP variation independent of poverty
-    SNAP_category = ntile(SNAP_residual, 3),
-    SNAP_category = factor(SNAP_category,
-                           levels = c(1, 2, 3),
-                           labels = c("Low SNAP", "Medium SNAP", "High SNAP"))
-  )
+food_access_clean |>
+  mutate(bin_SNAP = factor(ntile(TractSNAP, 3),
+                           labels = c("Low SNAP", "Mid SNAP", "High SNAP"))) |>
+  ggplot(aes(x = PovertyRate, 
+             y = as.numeric(LILATracts_1And10) - 1,
+             color = bin_SNAP)) +
+    geom_jitter(alpha = 0.2, height = 0.02) +
+    geom_smooth(method = "glm",
+                method.args = list(family = "binomial"),
+                se = FALSE) +
+    labs(title = "SNAP × Poverty Rate Interaction Effect",
+         y = "Probability of Food Desert",
+         x = "Poverty Rate",
+         color = "SNAP Recipients") +
+    scale_x_continuous(labels = scales::label_percent(scale = 1))
 
-ggplot(food_access_interact, aes(x = PovertyRate,
-                               y = as.numeric(LILATracts_1And10) - 1,
-                               color = SNAP_category)) +
-  geom_jitter(alpha = 0.15, height = 0.02) +
-  geom_smooth(method = "glm",
-              method.args = list(family = "binomial"),
-              se = FALSE) +
-  labs(title = "Poverty Rate × SNAP Recipients Interaction Effect",
-       subtitle = "SNAP binned on residuals (controlling for poverty)",
-       y = "Predicted Probability of Food Desert",
-       x = "Poverty Rate",
-       color = "SNAP Level") +
-  scale_x_continuous(labels = scales::label_percent(scale = 1)) +
-  scale_y_continuous(labels = scales::label_percent()) 
 ```
 
 In the first plot, we see how higher levels of median family income are linked to higher probabilities of food deserts — in both the lines plotted, regardless of urban classification. However, the plot shows that an interaction between urbanicity and median family income certainly exists because the slopes for the two lines are substantially different. The plot shows that tracts classified as urban have higher probabilities of being food deserts than tracts classified as rural at the same median income. While the lines converge at median family incomes above \$125,000, the initial difference serves as evidence that some of the variability between the probability of a food desert and median family income can be explained by a census tract being urban or rural. The second plot serves to reinforce this assessment. The two groups of boxes for tracts classified as food deserts and those as not are significantly different because the boxes do not overlap across groups. The interaction effect between median family income and urbanicity is especially apparent in the census tracts not classified as food deserts, as the plot shows how rural tracts in non-food deserts have a considerably lower median family income than urban tracts.  Thus, rather than simply seeing how median family income varies according to food desert classification, adding urbanicity creates an additional, important interaction to consider. 
@@ -326,70 +316,219 @@ In the first plot, we see how higher levels of median family income are linked t
 ## Methodology
 
 ```{r}
+#| label: transformations
+
+# - check if log transformation necessary by comparing pred binning vs logins (odds of being a food desert). If it levels off then log transform.
+
+# log transform TractHUNV
+food_access_clean |>
+  mutate(
+    y = as.numeric(LILATracts_1And10) - 1,
+    hunv_bin = ntile(TractHUNV, 10)
+  ) |>
+  group_by(hunv_bin) |>
+  summarise(
+    hunv_mid = mean(TractHUNV, na.rm = TRUE),
+    p = mean(y, na.rm = TRUE),
+    n = n(),
+    .groups = "drop"
+  ) |>
+  mutate(
+    # smooth to avoid p = 0 or 1
+    p_adj = (p * (n - 1) + 0.5) / n,
+    log_odds = log(p_adj / (1 - p_adj))
+  ) |>
+  ggplot(aes(x = hunv_mid, y = log_odds)) +
+  geom_point() +
+  labs(
+    x = "Housing Units without Vehicle",
+    y = "Log-Odds of Food Desert",
+    title = "Linearity Check: HUNV vs Log-Odds"
+  )
+
+# log transform PovertyRate
+food_access_clean |>
+  mutate(
+    y = as.numeric(LILATracts_1And10) - 1,
+    povertyRate_bin = ntile(PovertyRate, 10)
+  ) |>
+  group_by(povertyRate_bin) |>
+  summarise(
+    povertyRate_mid = mean(PovertyRate, na.rm = TRUE),
+    p = mean(y, na.rm = TRUE),
+    n = n(),
+    .groups = "drop"
+  ) |>
+  mutate(
+    # smooth to avoid p = 0 or 1
+    p_adj = (p * (n - 1) + 0.5) / n,
+    log_odds = log(p_adj / (1 - p_adj))
+  ) |>
+  ggplot(aes(x = povertyRate_mid, y = log_odds)) +
+  geom_point() +
+  geom_smooth(se = FALSE) +
+  labs(
+    x = "Poverty Rate",
+    y = "Log-Odds of Food Desert",
+    title = "Linearity Check: Poverty Rate vs Log-Odds"
+  )
+# log transform SNAP
+food_access_clean |>
+  mutate(
+    y = as.numeric(LILATracts_1And10) - 1,
+    SNAP_bin = ntile(TractSNAP, 10)
+  ) |>
+  group_by(SNAP_bin) |>
+  summarise(
+    SNAP_mid = mean(TractSNAP, na.rm = TRUE),
+    p = mean(y, na.rm = TRUE),
+    n = n(),
+    .groups = "drop"
+  ) |>
+  mutate(
+    # smooth to avoid p = 0 or 1
+    p_adj = (p * (n - 1) + 0.5) / n,
+    log_odds = log(p_adj / (1 - p_adj))
+  ) |>
+  ggplot(aes(x = SNAP_mid, y = log_odds)) +
+  geom_point() +
+  geom_smooth(se = FALSE) +
+  labs(
+    x = "Tract SNAP",
+    y = "Log-Odds of Food Desert",
+    title = "Linearity Check: Tract SNAP vs Log-Odds"
+  )
+# log transform Income
+food_access_clean |>
+  mutate(
+    y = as.numeric(LILATracts_1And10) - 1,
+    income_bin = ntile(MedianFamilyIncome, 10)
+  ) |>
+  group_by(income_bin) |>
+  summarise(
+    income_mid = mean(MedianFamilyIncome, na.rm = TRUE),
+    p = mean(y, na.rm = TRUE),
+    n = n(),
+    .groups = "drop"
+  ) |>
+  mutate(
+    # smooth to avoid p = 0 or 1
+    p_adj = (p * (n - 1) + 0.5) / n,
+    log_odds = log(p_adj / (1 - p_adj))
+  ) |>
+  ggplot(aes(x = income_mid, y = log_odds)) +
+  geom_point() +
+  geom_smooth(se = FALSE) +
+  labs(
+    x = "Median Family Income",
+    y = "Log-Odds of Food Desert",
+    title = "Linearity Check: Median Family Income vs Log-Odds"
+  )
+
+# SHOULD I ADD RACE?
+
+
+
+```
+
+```{r}
 #| label: fit-model
 
-glm_interact1 <- glm(LILATracts_1And10 ~ 
-                     MedianFamilyIncome * Urban +
+baseline_fit <-  glm(LILATracts_1And10 ~ 
+                       Urban,
+                     data = food_access_clean,
+                     family = "binomial")
+
+model_poverty <- glm(LILATracts_1And10 ~ 
+                     MedianFamilyIncome +
                      TractSNAP +
-                     log1p(TractHUNV) +
+                     TractHUNV +
                      PovertyRate,
                    data = food_access_clean,
                    family = "binomial")
 
-glm_interact2 <-  glm(LILATracts_1And10 ~ 
+model_combined <-  glm(LILATracts_1And10 ~ 
                      MedianFamilyIncome +
                      Urban +
-                     TractSNAP * PovertyRate +
-                     log1p(TractHUNV),
+                     TractSNAP +
+                     TractHUNV +
+                     PovertyRate,
                    data = food_access_clean,
                    family = "binomial")
 
-glm_food_access <- glm(LILATracts_1And10 ~ 
-                         MedianFamilyIncome + 
-                         Urban + 
-                         TractSNAP +
-                         log1p(TractHUNV) +
-                         PovertyRate,
-                       data = food_access_clean,
-                       family = "binomial")
+model_urban_income_interact <- glm(LILATracts_1And10 ~ 
+                     MedianFamilyIncome * Urban +
+                     TractSNAP +
+                     TractHUNV +
+                     PovertyRate,
+                   data = food_access_clean,
+                   family = "binomial")
 
-vif(glm_food_access)
+model_snap_poverty_interact <-  glm(LILATracts_1And10 ~ 
+                     MedianFamilyIncome +
+                     Urban +
+                     TractSNAP * PovertyRate +
+                     TractHUNV,
+                   data = food_access_clean,
+                   family = "binomial")
 
-vif(glm_interact2)
+tidy(model_snap_poverty_interact, exponentiate = TRUE) |>
+  kable(digits = 5)
+
+AIC(baseline_fit)
+AIC(model_poverty)
+AIC(model_combined) # very close to smallest AIC
+AIC(model_urban_income_interact)
+AIC(model_snap_poverty_interact) # smallest AIC
+
+
+BIC(baseline_fit)
+BIC(model_poverty)
+BIC(model_combined) # smallest BIC
+BIC(model_urban_income_interact)
+BIC(model_snap_poverty_interact) # second smallest BIC
+
+
+
+vif(baseline_fit)
+vif(model_poverty)
+vif(model_combined)
+vif(model_urban_income_interact)
+vif(model_snap_poverty_interact)
+
 
 # check if interaction effect improved model
-anova(glm_food_access, glm_interact1, test = "Chisq")
+# anova(glm_food_access, glm_interact1, test = "Chisq")
 # --> choose glm_food_access
+
+model_snap_poverty_interact_aug <- augment(model_snap_poverty_interact)
 ```
 
 ```{r}
 #| label: model-selection
 
-# evaluate model
-food_access_aug <- augment(glm_interact2)
-
-# outliers
-food_access_aug |>
-  filter(.cooksd > 1)
-
-#calculate AUC
-AUC <- food_access_aug |>
-  roc_auc(LILATracts_1And10, .fitted, event_level = "second")
-
+# # outliers
+# food_access_aug |>
+#   filter(.cooksd > 1)
+# 
+# #calculate AUC
+# AUC <- food_access_aug |>
+#   roc_auc(LILATracts_1And10, .fitted, event_level = "second")
+# 
+# # AIC
+# AIC1 <- glance(glm_food_access)$AIC
+# AIC2 <- glance(interact_model)$AIC
+# # BIC
+# BIC <- glance(glm_food_access)$BIC
+# BIC2 <- glance(interact_model)$BIC
+# 
+# AUC
+# 
 # AIC
-AIC1 <- glance(glm_food_access)$AIC
-AIC2 <- glance(glm_interact2)$AIC
 # BIC
-BIC <- glance(glm_food_access)$BIC
-BIC2 <- glance(glm_interact2)$BIC
-
-AUC
-
-AIC
-BIC
-
-AIC2
-BIC2
+# 
+# AIC2
+# BIC2
 
 ```
 
@@ -412,8 +551,8 @@ do cross validation later to see how well model generalizes to unseen data
 ```{r}
 #| label: model-prediction
 
-tidy(glm_interact2, exponentiate = TRUE) |>
-  kable(digits=3)
+# tidy(interact_model, exponentiate = TRUE) |>
+#   kable(digits=3)
 
 ```
 
