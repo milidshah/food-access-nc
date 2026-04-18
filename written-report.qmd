@@ -40,21 +40,21 @@ Before you submit, make sure your code chunks are turned off with `echo: false` 
 
 ## Introduction
 
-There are [18.8 million](https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation#:~:text=This%20measure%20shows%20that%20an%20estimated%2018.8%20million%20people%2C%20or%206.1%20percent%20of%20the%20U.S.%20population%2C%20live%20in%20low%2Dincome%20and%20low%20access%20tracts%20and%20are%20more%20than%201%20mile%20or%2010%20miles%20from%20a%20supermarket) Americans living in food deserts today — areas with limited access to affordable and nutritious food. The [USDA has defined food deserts](https://www.ers.usda.gov/amber-waves/2011/december/data-feature-mapping-food-deserts-in-the-u-s#:~:text=ERS's%20Food%20Desert%20Locator%20is,are%20defined%20as%20food%20deserts.) to be census tracts that have a poverty rate of 20% or greater (or median family income that is less than 80% of statewide family income) and where at least 33% of the population (or at least 500 people) live more than 1 mile from the supermarket in an urban area/ 10 miles in a rural area. Food deserts are created not only due to distance from healthy food sources but also due to structural decisions that have historically limited healthy food access for minority communities. Understanding this issue requires examining how redlining policies institutionalized neighborhood disinvestment, disproportionately exposing low-income and [minority communities to less healthy food environments](https://www.theatlantic.com/ideas/archive/2024/12/food-deserts-robinson-patman/680765/). These disparities carry serious consequences: food deserts are linked to worse health outcomes, including [shorter life expectancy](https://pressroom.cancer.org/releases?item=1237,) and a higher risk for [adverse cardiovascular events](https://pmc.ncbi.nlm.nih.gov/articles/PMC6405658/). Given these health risks and the disproportionate racial impact of food deserts, it is critical to evaluate what factors contribute to their persistence and how current policy can work toward reversing years of racial residential segregation.
+### Background & Relevant Work
 
-This issue is particularly relevant to us as Duke students, as [9 of the top 10 states with the greatest share of residents living in food deserts are in the South](https://www.ers.usda.gov/data-products/food-access-research-atlas/state-level-estimates-of-low-income-and-low-access-populations). This proximity makes understanding the structural drivers of food deserts a matter of community concern. Thus, I seek to answer the following question: in what ways do the poverty rate of a census tract, the number of households receiving SNAP benefits, the number of households without a vehicle, median family income, and urban/rural classification influence whether a census tract is a food desert (classified as a low-income, low-access area) in North Carolina? I will use the USDA's 2019 Food Research Atlas dataset to investigate this question and illuminate patterns in food access in North Carolina
+There are [18.8 million](https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation#:~:text=This%20measure%20shows%20that%20an%20estimated%2018.8%20million%20people%2C%20or%206.1%20percent%20of%20the%20U.S.%20population%2C%20live%20in%20low%2Dincome%20and%20low%20access%20tracts%20and%20are%20more%20than%201%20mile%20or%2010%20miles%20from%20a%20supermarket) Americans living in food deserts today — areas with limited access to affordable and nutritious food. The [USDA has defined food deserts](https://www.ers.usda.gov/amber-waves/2011/december/data-feature-mapping-food-deserts-in-the-u-s#:~:text=ERS's%20Food%20Desert%20Locator%20is,are%20defined%20as%20food%20deserts.) to be census tracts that have a poverty rate of 20% or greater (or median family income that is less than 80% of statewide family income) and where at least 33% of the population live more than 1 mile from the supermarket in an urban area/ 10 miles in a rural area. Food deserts are created by distance from healthy food sources, usually influenced by structural decisions that have historically limited healthy food access for minority communities. Understanding this issue requires examining how redlining policies institutionalized neighborhood disinvestment, disproportionately exposing low-income and [minority communities to less healthy food environments](https://www.theatlantic.com/ideas/archive/2024/12/food-deserts-robinson-patman/680765/). These disparities carry serious consequences: food deserts are linked to worse health outcomes, including [shorter life expectancy](https://pressroom.cancer.org/releases?item=1237,) and a higher risk for [adverse cardiovascular events](https://pmc.ncbi.nlm.nih.gov/articles/PMC6405658/). Given these health risks and the disproportionate racial impact of food deserts, it is critical to evaluate what factors contribute to their persistence and how current policy can work toward reversing years of racial residential segregation.
 
-Since this dataset is substantially large with more than 72,000 observations, fitting a model on the data could result in some predictors with extremely low p values, indicating significant impacts on the response variable, though it may not truly be the case. In order to address this limitation, I will focus specifically on North Carolina to make this analysis more relevant to our positioning as residents of the state. Though filtering the data addresses the issue of having too many observations skew the p-values, observations in the dataset could be dependent due to the fact that neighboring census tracts will likely have similar measures for variables in the dataset. To account for this, I will take a random sample of 20% of the filtered, North Carolina-specific dataset. Finally, there is substantial missing data in variables that track specific numbers, like amount of people living in a low access, low income area (`LALOWI1_10)`. Thus, I will use the `LILATracts_1AND10` response variable, which is an indicator variable of what `LALOWI1_10` measures. Beyond that, if some variables have only a few missing values, I will delete those observations from the data. Therefore, I also acknowledge that this data may not be entirely representative of the entire state, especially if those null values were concentrated in a specific area. Finally, in working with health and social science data, I am also cognizant of confounding being a limitation. This dataset does not provide a comprehensive account of all the factors that impact whether a census tract is a food desert since other variables can influence this measure/ the measure of other predictors. For instance, the `TractHUNV` predictor measures the number of housing units without a vehicle in a certain tract. Though the absence of a vehicle can make healthy food inaccessible, and therefore contribute to the categorization of an area as a food desert, the variable does not give a complete picture of accessibility — especially since access to public transportation is not considered. I will remain mindful of these limitations and incorporate them into my analysis to ensure that my interpretations and conclusions are statistically sound.
+This issue is particularly relevant to us as Duke students, as [9 of the top 10 states with the greatest share of residents living in food deserts are in the South](https://www.ers.usda.gov/data-products/food-access-research-atlas/state-level-estimates-of-low-income-and-low-access-populations). In particular, North Carolina is one of the top 10 agricultural states in the US, but its [food insecurity rate is 13.9%](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0330333) — 2.2 percentage points higher than the national average. This proximity makes understanding the structural drivers of food deserts a matter of community concern. Thus, I seek to answer the following question: what features can best explain whether a census tract is a food desert (classified as a low-income, low-access area) in North Carolina?
 
-## Exploratory Data Analysis
+[Studies](https://doi.org/10.1016/j.ypmed.2013.10.010) have found that neighborhood racial composition and poverty rates are associated with food store availability. Interestingly, this study notes that these associations vary by rural and urban regions, which is why interventions should be developed locally rather than universally. A [cross-sectional survey](https://doi.org/10.1016/j.pmedr.2019.01.001) of randomly selected households in public housing communities in Baltimore, MD found that indivduals with a personal vehicle were more likely to report ease in reaching health food stores as compared to others.
 
-### Data description
+### Data & Key Variables
 
-I will analyze the 2019 Food Access Research Atlas dataset from the USDA Economic Research Service. It provides an overview of food access indicators in the US by measuring variables like supermarket accessibility, race, poverty rate, and median income by census tract. This [dataset is a combination of data](https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation#data) collected by the 2010 Decennial Census, the 2014-18 American Community Survey (ACS), and two 2019 lists of supermarkets, one being from Trade Dimensions TDLinx. The 2010 Census provided population data relating to age, race, income, and poverty rate. The 2014-18 ACS contributed information about income, vehicle availability, and SNAP participation. Finally, two lists of grocery stores were combined to produce a list of stores that have nutritious and affordable food. This data was then used to compute the variables that communicate the distance that one lives from a grocery store.
+Informed by these racial and economic patterns of food access, I will use the [USDA's 2019 Food Research Atlas](https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data) dataset to investigate my question and choose key predictors to understand patterns of food access in North Carolina. The 2019 Food Access Research Atlas provides an overview of food access indicators in the US by measuring variables like supermarket accessibility, race, poverty rate, and median income. This [dataset is a combination of data](https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation#data) collected by the 2010 Decennial Census, the 2014-18 American Community Survey (ACS), and two 2019 lists of supermarkets, one being from Trade Dimensions TDLinx. Observations are at the census tract level and therefore may not be independent, as nearby census tracts are likely to exhibit similar patterns in food desert status and food desert predictors. In order to address this limitation, I will take a random sample of 20% of the North Carolina subset of the dataset. There is also substantial missing data in the `LALOWI1_10` variable, which represents the amount of people living in a low access, low income area. Thus, I will use the `LILATracts_1AND10` response variable, which is an indicator variable of what `LALOWI1_10` measures — whether a tract is classified as low income and low access (food desert). The `MedianFamilyIncome` variable also has 17 missing observations. However, since this is not a significant portion of the data for the NC sample (17 missing out of 448 observations), I will delete these observations rather than impute counts, so as not to assume patterns for certain areas. As a result, I also acknowledge that this data may not be entirely representative of the entire state, especially if those null values were concentrated in a specific area.
 
-### Key Variables
+To understand factors that contribute to a census tract's categorization as low-income and low-access (or being a food desert), I will focus on the `LILATracts_1And10` response variable as a proxy measure for food desert (as it fits the [USDA's definition of a food desert](https://www.congress.gov/crs-product/IF11841)) and the following predictor variables: `Urban` , `TractSNAP` , `TractHUNV` , `PovertyRate` , `MedianFamilyIncome` . `Urban` is an indicator variable that classifies a census tract as urban or not using the official definition by the US Census (urban area has more than 2,500 people). This predictor will contribute to understanding whether food deserts vary by urbanicity, which is helpful in understanding where policymakers should direct resources to address such issues. Next, `TractSNAP` will detail the number of housing units within a census tract receiving SNAP benefits. The rationale behind including this predictor is that communities with more individuals receiving SNAP benefits are also likely to be underresourced, characteristic of food deserts. `TractHUNV` provides information on number of housing units with access to a vehicle, which could illuminate the low access to grocery stores aspect of the food desert definition. Finally, `MedianFamilyIncome` and `Urban` will both be used to determine the general economic state of families in a census tract.
 
-Each observation in the data represents an individual census tract in a specific county and state, uniquely identified by the `CensusTract` variable. In understanding factors that contribute to a census tract's categorization as low-income and low-access (or being a food desert), I will focus on the `LILATracts_1And10` response variable and the following predictor variables: `Urban` , `TractSNAP` , `TractHUNV` , `PovertyRate` , `MedianFamilyIncome` . `Urban` is an indicator variable that classifies a census tract as urban or not using the official definition by the US Census (urban area has more than 2,500 people). This predictor will contribute to understanding whether food deserts vary by urbanicity, which is helpful in understanding where policymakers should direct resources to address such issues. Next, `TractSNAP` will detail the number of people within a census tract receiving SNAP benefits. The rationale behind including this predictor is that communities with more individuals receiving SNAP benefits are also likely to be underresourced, characteristic of food deserts. `TractHUNV` provides information on access to a vehicle, which could illuminate the low access to grocery stores aspect of the food desert definition. Finally, `MedianFamilyIncome` and `Urban` will both be used to determine the general economic state of families in a census tract. Since having these two variables could present issues of multicollinearity in the model, I will check the variance inflation factor to make a decision on keeping the predictors and which one. Finally, `LILATracts_1And10` is an indicator variable which tracks if a census tract is low income and low access, measured at 1 mile for urban areas and 10 miles for rural areas. This fits the [USDA's definiton of a food desert](https://www.ers.usda.gov/amber-waves/2011/december/data-feature-mapping-food-deserts-in-the-u-s#:~:text=ERS's%20Food%20Desert%20Locator%20is,are%20defined%20as%20food%20deserts.), so `LILATracts_1And10` will also serve as an abstraction for whether a census tract is classified as a food desert.
+### Exploratory Data Analysis
 
 ```{r}
 #| label: clean-data
@@ -88,6 +88,9 @@ food_access_clean <- food_access |>
 #| label: explore-outcome
 #| warning: false
 #| message: false
+#| fig.keep: "last"
+#| echo: false
+#| output: false
 
 options(tigris_use_cache = TRUE)
 options(tigris_progress = FALSE)
@@ -136,6 +139,9 @@ Observing the bar chart and the table about the proportion of tracts within the 
 ```{r}
 #| label: explore-preds
 #| warning: false
+#| fig.show: "hide"
+#| output: false
+#| echo: false
 
 # Urban, TractSNAP, TractHUNV, PovertyRate, MedianFamilyIncome
 
@@ -189,6 +195,7 @@ p4 | p5
 
 ```{r}
 #| label: summary-stats
+#| output: false
 
 summary(food_access_clean[c("PovertyRate", 
                             "TractSNAP", 
@@ -217,6 +224,7 @@ Since each of these exhibits a substantial right skew and a couple of outliers, 
 ```{r}
 #| label: response-vs-preds
 #| warning: false
+#| fig.keep: !expr c(1, 3)
 
 # urban x LILATracts_1And10
 food_access_clean |>
@@ -268,6 +276,7 @@ Finally, the facet plot shows very interesting and potentially significantly dif
 ```{r}
 #| label: interaction
 #| message: false
+#| fig.keep: "last"
 
 # plot pred probs of food desert and median income by urbanicity
 ggplot(food_access_clean, aes(x = MedianFamilyIncome,
@@ -313,20 +322,25 @@ food_access_clean |>
 
 In the first plot, we see how higher levels of median family income are linked to higher probabilities of food deserts — in both the lines plotted, regardless of urban classification. However, the plot shows that an interaction between urbanicity and median family income certainly exists because the slopes for the two lines are substantially different. The plot shows that tracts classified as urban have higher probabilities of being food deserts than tracts classified as rural at the same median income. While the lines converge at median family incomes above \$125,000, the initial difference serves as evidence that some of the variability between the probability of a food desert and median family income can be explained by a census tract being urban or rural. The second plot serves to reinforce this assessment. The two groups of boxes for tracts classified as food deserts and those as not are significantly different because the boxes do not overlap across groups. The interaction effect between median family income and urbanicity is especially apparent in the census tracts not classified as food deserts, as the plot shows how rural tracts in non-food deserts have a considerably lower median family income than urban tracts.  Thus, rather than simply seeing how median family income varies according to food desert classification, adding urbanicity creates an additional, important interaction to consider. 
 
+In working with health and social science data, I am also cognizant of confounding being a limitation. This dataset does not provide a comprehensive account of all the factors that impact whether a census tract is a food desert since other variables can influence this measure/ the measure of other predictors. For instance, the `TractHUNV` predictor measures the number of housing units without a vehicle in a certain tract. Though the absence of a vehicle can make healthy food inaccessible, and therefore contribute to the categorization of an area as a food desert, the variable does not give a complete picture of accessibility — especially since access to public transportation is not considered. I will remain mindful of these limitations and incorporate them into my interpretation of the model to ensure that my conclusions are statistically sound and representative of the data.
+
 ## Methodology
 
 ```{r}
 #| label: transformations
+#| fig.show: "hide"
 
 # - check if log transformation necessary by comparing pred binning vs logins (odds of being a food desert). If it levels off then log transform.
 
-# log transform TractHUNV
-food_access_clean |>
+# check for linear relationship between TractHUNV and food desert
+ p1 <- food_access_clean |>
   mutate(
     y = as.numeric(LILATracts_1And10) - 1,
-    hunv_bin = ntile(TractHUNV, 10)
+    # ntile code from: https://dplyr.tidyverse.org/reference/ntile.html
+    hunv_bin = ntile(TractHUNV, 10) 
   ) |>
   group_by(hunv_bin) |>
+  # code in the summarize and following mutate function adapted from ChatGPT
   summarise(
     hunv_mid = mean(TractHUNV, na.rm = TRUE),
     p = mean(y, na.rm = TRUE),
@@ -345,14 +359,47 @@ food_access_clean |>
     y = "Log-Odds of Food Desert",
     title = "Linearity Check: HUNV vs Log-Odds"
   )
+ 
+ 
+p2 <- food_access_clean |>
+  mutate(
+    y = as.numeric(LILATracts_1And10) - 1,
+    # ntile code from: https://dplyr.tidyverse.org/reference/ntile.html
+    hunv_bin = ntile(log1p(TractHUNV), 10) 
+  ) |>
+  group_by(hunv_bin) |>
+  # code in the summarize and following mutate function adapted from ChatGPT
+  summarise(
+    hunv_mid = mean(log1p(TractHUNV), na.rm = TRUE),
+    p = mean(y, na.rm = TRUE),
+    n = n(),
+    .groups = "drop"
+  ) |>
+  mutate(
+    # smooth to avoid p = 0 or 1
+    p_adj = (p * (n - 1) + 0.5) / n,
+    log_odds = log(p_adj / (1 - p_adj))
+  ) |>
+  ggplot(aes(x = hunv_mid, y = log_odds)) +
+  geom_point() +
+  labs(
+    x = " LOGGED: Housing Units without Vehicle",
+    y = "Log-Odds of Food Desert",
+    title = "Linearity Check: HUNV vs Log-Odds"
+  ) 
+p1 | p2
+ 
+ 
 
-# log transform PovertyRate
+# check for linear relationship between PovertyRate and food desert
 food_access_clean |>
   mutate(
     y = as.numeric(LILATracts_1And10) - 1,
+    # ntile code from: https://dplyr.tidyverse.org/reference/ntile.html
     povertyRate_bin = ntile(PovertyRate, 10)
   ) |>
   group_by(povertyRate_bin) |>
+  # code in the summarize and following mutate function adapted from ChatGPT
   summarise(
     povertyRate_mid = mean(PovertyRate, na.rm = TRUE),
     p = mean(y, na.rm = TRUE),
@@ -366,19 +413,21 @@ food_access_clean |>
   ) |>
   ggplot(aes(x = povertyRate_mid, y = log_odds)) +
   geom_point() +
-  geom_smooth(se = FALSE) +
   labs(
     x = "Poverty Rate",
     y = "Log-Odds of Food Desert",
     title = "Linearity Check: Poverty Rate vs Log-Odds"
   )
-# log transform SNAP
+
+# check for linear relationship between TractSNAP and food desert
 food_access_clean |>
   mutate(
     y = as.numeric(LILATracts_1And10) - 1,
+    # ntile code from: https://dplyr.tidyverse.org/reference/ntile.html
     SNAP_bin = ntile(TractSNAP, 10)
   ) |>
   group_by(SNAP_bin) |>
+   # code in the summarize and following mutate function adapted from ChatGPT
   summarise(
     SNAP_mid = mean(TractSNAP, na.rm = TRUE),
     p = mean(y, na.rm = TRUE),
@@ -392,19 +441,21 @@ food_access_clean |>
   ) |>
   ggplot(aes(x = SNAP_mid, y = log_odds)) +
   geom_point() +
-  geom_smooth(se = FALSE) +
   labs(
     x = "Tract SNAP",
     y = "Log-Odds of Food Desert",
     title = "Linearity Check: Tract SNAP vs Log-Odds"
   )
-# log transform Income
+
+# check for linear relationship between income and food desert
 food_access_clean |>
   mutate(
     y = as.numeric(LILATracts_1And10) - 1,
+    # ntile code from: https://dplyr.tidyverse.org/reference/ntile.html
     income_bin = ntile(MedianFamilyIncome, 10)
   ) |>
   group_by(income_bin) |>
+  # code in the summarize and following mutate function adapted from ChatGPT
   summarise(
     income_mid = mean(MedianFamilyIncome, na.rm = TRUE),
     p = mean(y, na.rm = TRUE),
@@ -418,21 +469,17 @@ food_access_clean |>
   ) |>
   ggplot(aes(x = income_mid, y = log_odds)) +
   geom_point() +
-  geom_smooth(se = FALSE) +
   labs(
     x = "Median Family Income",
     y = "Log-Odds of Food Desert",
     title = "Linearity Check: Median Family Income vs Log-Odds"
   )
 
-# SHOULD I ADD RACE?
-
-
-
 ```
 
 ```{r}
 #| label: fit-model
+#| output: false
 
 baseline_fit <-  glm(LILATracts_1And10 ~ 
                        Urban,
@@ -472,14 +519,20 @@ model_snap_poverty_interact <-  glm(LILATracts_1And10 ~
                    data = food_access_clean,
                    family = "binomial")
 
-tidy(model_snap_poverty_interact, exponentiate = TRUE) |>
-  kable(digits = 5)
+model_urban_hunv_interact <-  glm(LILATracts_1And10 ~ 
+                     MedianFamilyIncome +
+                     TractSNAP +
+                     TractHUNV * PovertyRate +
+                     Urban,
+                   data = food_access_clean,
+                   family = "binomial")
 
 AIC(baseline_fit)
 AIC(model_poverty)
 AIC(model_combined) # very close to smallest AIC
 AIC(model_urban_income_interact)
 AIC(model_snap_poverty_interact) # smallest AIC
+AIC(model_urban_hunv_interact)
 
 
 BIC(baseline_fit)
@@ -487,48 +540,31 @@ BIC(model_poverty)
 BIC(model_combined) # smallest BIC
 BIC(model_urban_income_interact)
 BIC(model_snap_poverty_interact) # second smallest BIC
+BIC(model_urban_hunv_interact)
 
-
-
-vif(baseline_fit)
-vif(model_poverty)
 vif(model_combined)
-vif(model_urban_income_interact)
 vif(model_snap_poverty_interact)
 
-
 # check if interaction effect improved model
-# anova(glm_food_access, glm_interact1, test = "Chisq")
-# --> choose glm_food_access
+anova(model_combined, model_snap_poverty_interact, test = "Chisq") |>
+  tidy() |>
+  kable(digits = 3)
 
-model_snap_poverty_interact_aug <- augment(model_snap_poverty_interact)
+
 ```
 
 ```{r}
 #| label: model-selection
+#| output: false
 
-# # outliers
-# food_access_aug |>
-#   filter(.cooksd > 1)
-# 
-# #calculate AUC
-# AUC <- food_access_aug |>
-#   roc_auc(LILATracts_1And10, .fitted, event_level = "second")
-# 
-# # AIC
-# AIC1 <- glance(glm_food_access)$AIC
-# AIC2 <- glance(interact_model)$AIC
-# # BIC
-# BIC <- glance(glm_food_access)$BIC
-# BIC2 <- glance(interact_model)$BIC
-# 
-# AUC
-# 
-# AIC
-# BIC
-# 
-# AIC2
-# BIC2
+model_snap_poverty_interact_aug <- augment(model_snap_poverty_interact)
+model_combined_aug <- augment(model_combined)
+
+model_combined_aug |>
+  filter(.cooksd > 1)
+model_snap_poverty_interact_aug |>
+  filter(.cooksd > 1)
+
 
 ```
 
@@ -551,8 +587,8 @@ do cross validation later to see how well model generalizes to unseen data
 ```{r}
 #| label: model-prediction
 
-# tidy(interact_model, exponentiate = TRUE) |>
-#   kable(digits=3)
+tidy(model_combined, exponentiate = TRUE) |>
+  kable(digits=5)
 
 ```
 
@@ -575,3 +611,5 @@ TractSNAP is also statistically significant, indicating that for each additional
 ### Conclusions
 
 Altogether, the model suggests that economic measures, such as median family income and SNAP benefit receipt, are the most consistent predictors of food desert classification among North Carolina census tracts. The role of the other predictors is more complex, since the higher p-values do not allow us to comment on the significance of those predictors and patterns they illuminate about food access. Cross-validation will be used to further evaluate the model's predictive performance on unseen data, particularly given the class imbalance of 84% of census tracts being categorized as not a food desert.
+
+## Discussion
