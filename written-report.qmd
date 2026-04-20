@@ -82,8 +82,6 @@ food_access_clean <- food_access |>
 
 ```
 
-### Univariate EDA
-
 ```{r}
 #| label: explore-outcome
 #| warning: false
@@ -133,8 +131,6 @@ ggplot(nc_map_data) +
   theme_minimal()
 
 ```
-
-Observing the bar chart and the table about the proportion of tracts within the sample categorized as food deserts illuminates how the majority of census tracts in North Carolina (around 84%) are not food deserts. Furthermore, the map of food deserts across the state shows how food deserts are concentrated in small areas and do not simply exist at the census tract level. Noticing this is important for understanding how food deserts may not be very common, but they are evident and harmful for numerous communities across North Carolina. Finally, since `LILATracts_1And10` is mostly 0s, this suggests that the model may not predict tracts that are food deserts as well as it is able to predict tracts that are not food deserts, simply due to the amount of data it has for training. During inference, I will revisit this concern once more and consider using metrics like cross-validation to observe model performance on unseen data.
 
 ```{r}
 #| label: explore-preds
@@ -209,22 +205,10 @@ food_access_clean |>
 
 ```
 
-The univariate EDA for predictors shows how each of the numerical predictors (`PovertyRate`, `TractSNAP`, `TractHUNV`, `MedianFamilyIncome`) have a unimodal, right-skewed distribution. `Urban` shows a similar pattern of positive skew as the majority of census tracts in North Carolina (around 62%) are classified as urban. Due to this skew, the median is a good indicator of the center of the distribution for each of the variables. Thus, we see that the median poverty rate in NC is about 14.30%, which is higher than the [United States' official 10.6% poverty rate](https://www.census.gov/library/publications/2025/demo/p60-287.html). The spread of this distribution is also substantially wide in context as the IQR is 13. There are also some outlying census tracts with poverty rates above 50%.
-
-The distribution for `TractSNAP` shows a center around 188, meaning 188 housing units in a census tract receive SNAP benefits. The IQR of 255 housing units also seems relatively large, but when considering the fact that a census tract can range anywhere from 1,200 people to 8,000, this spread seems understandable due to population dynamics and urban/rural distributions. TractSNAP also has outliers at census tracts with more than 400 housing units receiving SNAP benefits.
-
-`TractHUNV` has a center of around 80 housing units in a census tract without access to a vehicle. This is surprisingly low but realistic since a car is a necessity in most parts of NC due to the state's lack of public transportation infrastructure. Similar to before, there are a few outliers observed above 400 housing units in a tract without access to a vehicle. The relatively smaller spread (IQR=11) is in line with our understanding of NC's public infrastructure and the necessity of a vehicle, regardless of income status.
-
-Finally, `MedianFamilyIncome` has a distribution very similar to `PovertyRate` , which is not unexpected since both are roughly measuring the economics state of a census tract. There is a center around \$61,500 median family income per census tract, much lower than the [US's](https://fred.stlouisfed.org/series/MEHOINUSA646N)\$83,000 median household income. The spread of the distribution (IQR) is about \$20,000, with outliers above median family incomes of \$150,000.
-
-Since each of these exhibits a substantial right skew and a couple of outliers, I will use metrics like Cook's distance to decide if points are influential and are harming the model's predictive capabilities. Furthermore, I will check whether these predictors need to be log transformed to represent a nonlinear relationship and account for the skew by comparing the adjusted R\^2 of models with different predictors transformed.
-
-### Bivariate EDA
-
 ```{r}
 #| label: response-vs-preds
 #| warning: false
-#| fig.keep: !expr c(1, 3)
+#| fig.keep: "first"
 
 # urban x LILATracts_1And10
 food_access_clean |>
@@ -256,6 +240,17 @@ food_access_clean |>
   labs(title = "Predictors vs Food Desert Status",
        x = "Food Desert Status")
 
+```
+
+The map illustrates how the majorty of North Carolina does not contain areas classified as food deserts. More specifically, it shows that food deserts are concentrated in small areas around the state, and viewed in conjunction with the stacked bar chart, we understand that census tracts classified as food deserts are primarily also categorized as urban areas. To be specific, 84% of census tracts in NC are not food deserts. Due to this class imbalance, it is likely that the model fit on this data will not be accurate at predicting tracts that are food deserts, so I will gear my model selection toward explaining factors that contribute to food deserts.
+
+Each of the quantitative predictors ( `PovertyRate`, `TractSNAP`, `TractHUNV`, `MedianFamilyIncome`) have a unimodal and slightly right-skewed distribution. `Urban` shows a similar pattern of positive skew as the majority of census tracts in North Carolina (around 62%) are classified as urban. To ensure that the relationships between the quantitative predictors and the response is linear, I plotted each against the predicted probability of being a food desert and confirmed linear relationships. This helped me determine not to log-transform the predictors when fitting my logistic regression model.
+
+Due to this skew, the median is a good indicator of the center of the distribution for each of the variables. Thus, we see that the median poverty rate in NC is about 14.30%, which is higher than the [United States' official 10.6% poverty rate](https://www.census.gov/library/publications/2025/demo/p60-287.html). There are also some insignificant outlying census tracts with poverty rates above 50%. On average, 188 housing units in a census tract receive SNAP benefits. The IQR for this distribution is 255 housing units, which seems relatively large, but considering the fact that a census tract can range anywhere from 1,200 to 8,000 people, this spread is understandable. Traditionally, 80 housing units in a census tract do not have access to a vehicle. This is surprisingly low but realistic since a car is a necessity in most parts of NC due to the state's lack of public transportation. The relatively smaller spread (IQR=11) is in line with our understanding of NC's public infrastructure and the necessity of a vehicle, regardless of income status. Finally, `MedianFamilyIncome` has a distribution very similar to `PovertyRate` , which is not unexpected since both are roughly measuring the economic state of a census tract. There is a center around \$61,500 median family income per census tract, much lower than the [US's \$83,000 median household income](https://fred.stlouisfed.org/series/MEHOINUSA646N). The spread of the distribution (IQR) is about \$20,000, with outliers above median family incomes of \$150,000.
+
+```{r}
+#| label: double-density-plot
+
 # income x lila
 food_access_clean |>
 ggplot(aes(x = MedianFamilyIncome, fill = LILATracts_1And10)) +
@@ -264,14 +259,11 @@ ggplot(aes(x = MedianFamilyIncome, fill = LILATracts_1And10)) +
        x = "Median Family Income by tract",
        fill = "Food Desert Status") +
     scale_x_continuous(labels = scales::label_dollar())
-
 ```
 
-The first plot illuminates an interesting pattern that a higher proportion of urban tracts are food deserts rather than rural tracts. Further analysis in the next steps of this project will investigate specific cases that may contribute to this counterintuitive pattern, as well as explain some hotspots of food deserts observed in the preliminary map. In addition to the facet plot, the double density plot of median family income differing by food desert status is an important visualization to understand how much the distribution of incomes within a tract varies according to whether the tract is in a food desert or not. For instance, tracts that are not food deserts have a similar center to tracts that are food deserts, but the median incomes are more spread out from \$45,000 to \$125,000, while median incomes for tracts in food deserts are mostly concentrated around \$45,000 to \$50,000. This pattern is important for solidifying the necessity of using median family income as a predictor for food desert status. The visualization also promotes an understanding of more routine or customary median family incomes across the state, which is important for conceptualizing the extent to which financial status impacts living conditions and location.
+The double-density plot reveals that median family income is more variable among food desert tracts than non-food desert tracts. For instance, tracts that are not food deserts have a similar center to tracts that are food deserts, but the median incomes are more spread out from \$45,000 to \$125,000, while median incomes for food desert tracts are mostly concentrated around \$45,000 to \$50,000. This distinction suggests a strong association between median family income and food desert status.
 
-Finally, the facet plot shows very interesting and potentially significantly different relationships for each predictor against food desert status since the boxes of the box plots are (mostly) not contained within each other and vary vertically. This pattern is especially evident in `MedianFamilyIncome`, `TractSNAP`, and `TractHUNV`. As mentioned earlier, tracts that are not food deserts have a noticeably higher median family income, and tracts that are food deserts have both smaller median family incomes as well as smaller variance. The remainder of the predictors show similar patterns to each other, where tracts that are food deserts see a greater number of housing units without a vehicle, a greater number of households receiving SNAP, and higher poverty rates. Each of these see significant differences between their non-food-desert-census-tract counterparts, but this significance will be reevaluated by assessing p-values of the predictors in the logistic regression model. In addition to providing motivation for using these predictors in the model, the box plots also provide a clearer view of the outliers. Across each of the faceted plots, there seem to be more outliers for tracts that are not classified as food deserts. This may be due to a wider spread of values and less uniformity in socioeconomic characteristics among non–food desert tracts. When creating our model, this knowledge can be helpful in determining other predictors to add or potential interactions with demographic characteristics present in the dataset. As a whole, this depiction of outliers also solidifies the need to assess how influential the outliers are for the model, which will determine if we will remove them for improved predictive power.
-
-### Interaction Effects
+Interestingly, when observing the relationship of the quantitative predictors and the response variable, there are more outliers and a higher spread for non-food desert tracts. This may be due to less uniformity in socioeconomic characteristics among non–food desert tracts.
 
 ```{r}
 #| label: interaction
@@ -320,7 +312,7 @@ food_access_clean |>
 
 ```
 
-In the first plot, we see how higher levels of median family income are linked to higher probabilities of food deserts — in both the lines plotted, regardless of urban classification. However, the plot shows that an interaction between urbanicity and median family income certainly exists because the slopes for the two lines are substantially different. The plot shows that tracts classified as urban have higher probabilities of being food deserts than tracts classified as rural at the same median income. While the lines converge at median family incomes above \$125,000, the initial difference serves as evidence that some of the variability between the probability of a food desert and median family income can be explained by a census tract being urban or rural. The second plot serves to reinforce this assessment. The two groups of boxes for tracts classified as food deserts and those as not are significantly different because the boxes do not overlap across groups. The interaction effect between median family income and urbanicity is especially apparent in the census tracts not classified as food deserts, as the plot shows how rural tracts in non-food deserts have a considerably lower median family income than urban tracts.  Thus, rather than simply seeing how median family income varies according to food desert classification, adding urbanicity creates an additional, important interaction to consider. 
+This plot demonstrates, and provides motivation for, understanding the interplay between the outlined key variables. My key variables assess the geographic makeup of a tract (`Urban)` as well as poverty or economic status of individuals within the tract (`MedianFamilyIncome` , `PovertyRate` , `TractHUNV` , and `TractSNAP` ). Since SNAP benefits are determined by relative income level and poverty rate, I visualize the interaction between the number of households receiving snap benefits in a tract and the tract poverty rate. According to the plot, there certainly seems to be an interaction effect since the slopes for each of the lines — representing different levels of snap receipt — are different. Most interesting, is that tracts with a high number of SNAP recipients do not see as drastic of an increase in the probability of being a food desert as poverty rate increases as tracts with a low number of SNAP recipients do. This pattern is perhaps due to the fact that if a tract has a high number of households receiving SNAP benefits, then it is already more likely to be classified as a food desert, hence the flatter slope as poverty rate increases. For tracts with a low number of households receiving SNAP benefits, poverty rate then serves as an important metric of food desert status, which could explain the sharp increase in probability of being a food desert with each 1 percentage point increase in poverty rate.
 
 In working with health and social science data, I am also cognizant of confounding being a limitation. This dataset does not provide a comprehensive account of all the factors that impact whether a census tract is a food desert since other variables can influence this measure/ the measure of other predictors. For instance, the `TractHUNV` predictor measures the number of housing units without a vehicle in a certain tract. Though the absence of a vehicle can make healthy food inaccessible, and therefore contribute to the categorization of an area as a food desert, the variable does not give a complete picture of accessibility — especially since access to public transportation is not considered. I will remain mindful of these limitations and incorporate them into my interpretation of the model to ensure that my conclusions are statistically sound and representative of the data.
 
