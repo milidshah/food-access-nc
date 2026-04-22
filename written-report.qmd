@@ -107,50 +107,6 @@ sample <- food_access_clean |>
 population <- food_access |>
     count(LILATracts_1And10) |>
     mutate(prop = n / nrow(food_access))
-
-
-# show how it varies across the state, using large dataset
-
-# code adapted from ChatGPT
-nc_tracts <- tracts(state = "NC", year = 2010, class = "sf")
-
-food_access <- food_access |>
-  mutate(CensusTract = as.character(CensusTract))
-
-nc_map_data <- nc_tracts |>
-  inner_join(food_access, by = c("GEOID10" = "CensusTract"))
-nc_map_data_sample <- nc_tracts |>
-  inner_join(
-    food_access_clean |> mutate(CensusTract = as.character(CensusTract)),
-    by = c("GEOID10" = "CensusTract")
-  )
-
-# MAP OF ALL TRACTS
-ggplot(nc_map_data) +
-  geom_sf(aes(fill = as.factor(LILATracts_1And10)), color = NA) +
-  scale_fill_manual(
-    values = c("0" = "lightgreen", "1" = "darkgreen"),
-    labels = c("Not Food Desert", "Food Desert"),
-    name = "Food Desert Classification"
-  ) +
-  labs(
-    title = "North Carolina Census Tracts",
-    subtitle = "Colored by Food Desert Presence"
-  ) +
-  theme_minimal()
-
-# # MAP FOR SAMPLED TRACTS
-# ggplot(nc_map_data_sample) +
-#   geom_sf(aes(fill = LILATracts_1And10), color = NA) +
-#   scale_fill_manual(
-#     values = c("Not Food Desert" = "lightgreen", "Food Desert" = "darkgreen"),
-#     name = "Food Desert Classification"
-#   ) +
-#   labs(
-#     title = "Random Sample of North Carolina Census Tracts",
-#     subtitle = "Colored by Food Desert Presence"
-#   ) +
-#   theme_minimal()
 ```
 
 ```{r}
@@ -315,9 +271,11 @@ food_access_clean |>
 
 # interaction between SNAP and poverty rate
 
-food_access_clean |>
+# create binned snap variable
+food_access_clean <- food_access_clean |>
   mutate(bin_SNAP = factor(ntile(TractSNAP, 3),
-                           labels = c("Low SNAP", "Mid SNAP", "High SNAP"))) |>
+                           labels = c("Low SNAP", "Mid SNAP", "High SNAP")))
+food_access_clean |>
   ggplot(aes(x = PovertyRate, 
              y = as.numeric(LILATracts_1And10) - 1,
              color = bin_SNAP)) +
@@ -350,111 +308,103 @@ baseline_fit <-  glm(LILATracts_1And10 ~
 
 model_poverty <- glm(LILATracts_1And10 ~ 
                      MedianFamilyIncome +
-                     TractSNAP +
+                     bin_SNAP +
                      TractHUNV +
-                     PovertyRate,
+                     log(PovertyRate),
                    data = food_access_clean,
                    family = "binomial")
 
 model_combined <-  glm(LILATracts_1And10 ~ 
                      MedianFamilyIncome +
                      Urban +
-                     TractSNAP +
+                     bin_SNAP +
                      TractHUNV +
-                     PovertyRate,
-                   data = food_access_clean,
-                   family = "binomial")
-
-model_urban_income_interact <- glm(LILATracts_1And10 ~ 
-                     MedianFamilyIncome * Urban +
-                     TractSNAP +
-                     TractHUNV +
-                     PovertyRate,
+                     log(PovertyRate),
                    data = food_access_clean,
                    family = "binomial")
 
 model_snap_poverty_interact <-  glm(LILATracts_1And10 ~ 
                      MedianFamilyIncome +
                      Urban +
-                     TractSNAP * PovertyRate +
+                     bin_SNAP * log(PovertyRate) +
                      TractHUNV,
                    data = food_access_clean,
                    family = "binomial")
 
-model_urban_hunv_interact <-  glm(LILATracts_1And10 ~ 
-                     MedianFamilyIncome +
-                     TractSNAP +
-                     TractHUNV * PovertyRate +
-                     Urban,
-                   data = food_access_clean,
-                   family = "binomial")
-
+# compare aic
 AIC(baseline_fit)
 AIC(model_poverty)
 AIC(model_combined) # very close to smallest AIC
-AIC(model_urban_income_interact)
 AIC(model_snap_poverty_interact) # smallest AIC
-AIC(model_urban_hunv_interact)
 
-
+# compare bic
 BIC(baseline_fit)
 BIC(model_poverty)
 BIC(model_combined) # smallest BIC
-BIC(model_urban_income_interact)
 BIC(model_snap_poverty_interact) # second smallest BIC
-BIC(model_urban_hunv_interact)
 
-vif(model_combined)
-vif(model_snap_poverty_interact)
+# compare auc
+roc_curve_comb <- roc(food_access_clean$LILATracts_1And10, 
+                      fitted(model_combined))
+auc_comb <- auc(roc_curve_comb)
+auc_comb
+roc_curve_interact <- roc(food_access_clean$LILATracts_1And10, 
+                          fitted(model_snap_poverty_interact))
+auc_interact <- auc(roc_curve_interact)
+auc_interact
 
 # check if interaction effect improved model
 anova(model_combined, model_snap_poverty_interact, test = "Chisq") |>
   tidy() |>
   kable(digits = 3)
 
-
 ```
 
-```{r}
-#| label: model-selection
-#| output: false
+We will fit a logistic regression model to predict what factors contribute to food deserts across counties in North Carolina. This model is best suited for my dataset because I wish to predict whether a specific census tract is or is not classified as a food desert. Since this is represented as a probability of being a food desert (binary choice), logistic regression will help make such a prediction. Before fitting the model, I will log-transform the poverty rate in order to satisfy the linearity condition between the response and predictor, as visualized in [Appendix B]. Additionally, I will convert the `TractSNAP` continuous variable to a factor with 3 different levels of high, medium, and low number of households receiving SNAP benefits. As seen in the EDA interaction plot, the slopes for the poverty rate differ based on the levels of SNAP receipt, so binning them will ensure that the relationship is preserved rather than smoothed over when the variable is continuous.
 
-model_snap_poverty_interact_aug <- augment(model_snap_poverty_interact)
-model_combined_aug <- augment(model_combined)
-
-model_combined_aug |>
-  filter(.cooksd > 1)
-model_snap_poverty_interact_aug |>
-  filter(.cooksd > 1)
-
-
-```
-
-We will fit a logistic regression model to predict what factors contribute to food deserts across counties in North Carolina. This model is best suited for my dataset because I wish to predict whether a specific census tract is or is not classified as a food desert. Since this is represented as a probability of being a food desert (binary choice), logistic regression will help make such a prediction. To select an explanatory model, I calculated AIC and BIC for the following models. $$ \text{1. Geographical Model: } \log\left(\frac{\hat{\pi}_i}{1-\hat{\pi}_i}\right) = \hat{\beta}_0 + \hat{\beta}_1 \cdot \text{Urban}_i $$
-
-$$
-\begin{aligned}\text{2. Poverty Model: }\log\left(\frac{\hat{\pi}_i}{1 - \hat{\pi}_i}\right) = &\; \hat{\beta}_0 + \hat{\beta}_1 \cdot \text{MedianIncome}_i + \hat{\beta}_2 \cdot \text{SNAP}_i \\&+ \hat{\beta}_3 \cdot \text{HUNV}_i + \hat{\beta}_4 \cdot \text{PovertyRate}_i\end{aligned}
-$$
+To select an explanatory model, I calculated AIC and BIC for the following models. $$ \text{1. Geographical Model: } \log\left(\frac{\hat{\pi}_i}{1-\hat{\pi}_i}\right) = \hat{\beta}_0 + \hat{\beta}_1 \cdot \text{Urban}_i $$
 
 $$
 \begin{aligned}
-\text{3. Combined Model: }\log\left(\frac{\hat{\pi}_i}{1 - \hat{\pi}_i}\right) = &\; \hat{\beta}_0 + \hat{\beta}_1 \cdot \text{Urban}_i + \hat{\beta}_2 \cdot \text{MedianIncome}_i \\
-&+ \hat{\beta}_3 \cdot \text{SNAP}_i + \hat{\beta}_4 \cdot \text{HUNV}_i + \hat{\beta}_5 \cdot \text{PovertyRate}_i
+\text{2. Poverty Model: } \log\left(\frac{\hat{\pi}_i}{1 - \hat{\pi}_i}\right) = &\; \hat{\beta}_0 + \hat{\beta}_1 \cdot \text{MedianFamilyIncome}_i \\
+&+ \hat{\beta}_2 \cdot \text{bin\_SNAP}_{\text{Mid},i} \\
+&+ \hat{\beta}_3 \cdot \text{bin\_SNAP}_{\text{High},i} \\
+&+ \hat{\beta}_4 \cdot \text{HUNV}_i \\
+&+ \hat{\beta}_5 \cdot \log(\text{PovertyRate}_i)
 \end{aligned}
 $$
 
 $$
 \begin{aligned}
-\text{4. Interaction Model: } \log\left(\frac{\hat{\pi}_i}{1-\hat{\pi}_i}\right) = &\; \hat{\beta}_0 + \hat{\beta}_1 \cdot \text{Urban}_i + \hat{\beta}_2 \cdot \text{MedianIncome}_i \\
-&+ \hat{\beta}_3 \cdot \text{SNAP}_i + \hat{\beta}_4 \cdot \text{HUNV}_i + \hat{\beta}_5 \cdot \text{PovertyRate}_i \\
-&+ \hat{\beta}_6(\text{SNAP}_i \times \text{PovertyRate}_i)
-\end{aligned}$$
+\text{3. Combined Model: } \log\left(\frac{\hat{\pi}_i}{1 - \hat{\pi}_i}\right) = &\; \hat{\beta}_0 + \hat{\beta}_1 \cdot \text{Urban}_i \\
+&+ \hat{\beta}_2 \cdot \text{MedianFamilyIncome}_i \\
+&+ \hat{\beta}_3 \cdot \text{bin\_SNAP}_{\text{Mid},i} \\
+&+ \hat{\beta}_4 \cdot \text{bin\_SNAP}_{\text{High},i} \\
+&+ \hat{\beta}_5 \cdot \text{HUNV}_i \\
+&+ \hat{\beta}_6 \cdot \log(\text{PovertyRate}_i)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+\text{4. Interaction Model: } \log\left(\frac{\hat{\pi}_i}{1-\hat{\pi}_i}\right) = &\; \hat{\beta}_0 + \hat{\beta}_1 \cdot \text{Urban}_i \\
+&+ \hat{\beta}_2 \cdot \text{MedianFamilyIncome}_i \\
+&+ \hat{\beta}_3 \cdot \text{bin\_SNAP}_{\text{Mid},i} \\
+&+ \hat{\beta}_4 \cdot \text{bin\_SNAP}_{\text{High},i} \\
+&+ \hat{\beta}_5 \cdot \text{HUNV}_i \\
+&+ \hat{\beta}_6 \cdot \log(\text{PovertyRate}_i) \\
+&+ \hat{\beta}_7 \cdot (\text{bin\_SNAP}_{\text{Mid},i} \times \log(\text{PovertyRate}_i)) \\
+&+ \hat{\beta}_8 \cdot (\text{bin\_SNAP}_{\text{High},i} \times \log(\text{PovertyRate}_i))
+\end{aligned}
+$$
 
 $$
 \text{where } \hat{\pi}_i \text{ represents the probability a census tract is a food desert}
 $$
 
-Testing each of these models allowed me to understand which interactions and predictors were most helpful in explaining the existence of a food desert census tract in NC. AIC/BIC revealed that the models with the lowest scores were the combined model (AIC: 255.682; BIC: 280.0789 ) and the interaction model (AIC: 255.481; BIC: 283.944). Since the difference in AIC was negligible — and BIC prioritizes prediction and parsimonious models — I used variance inflation factors and a drop in deviance test to further confirm which model to use. Computing the variance inflation factors for both models revealed no multicollinearity. Finally, to understand if the interaction effect is truly a necessary addition for explaining variation in predicted probabilities of a food desert tract, I conducted a drop-in-deviance test. The test showed a p-value of 0.138, which is greater than the significance threshold of 0.05 and therefore not a significant impact. Hence, I selected the final model to be the combined model with as `Urban` , `MedianFamilyIncome` , `TractSNAP`, `TractHUNV`, and `PovertyRate` as predictors.
+Testing each of these models allowed me to understand which interactions and predictors were most helpful in explaining the existence of a food desert census tract in NC. AIC/BIC revealed that the models with the lowest scores were the combined model (AIC: 254.14; BIC: 282.6027 ) and the interaction model (AIC: 252.6751; BIC: 289.27). Since the difference in AIC is too small to decide on, we can look at BIC. The difference in BIC between models is slightly larger at about 7, preferring the combined, more parsimonious model. However, I wish to refrain from relying on primarily BIC for model selection since it is better used to select predictive rather than explanatory models. Thus, I will also compare the AUC of the combined and interaction model. The AUC of the combined model is 0.8993 and the AUC of the interaction model is 0.9033. Since even AUC is very close and essentially indistinguishable, I look to using a drop in deviance test to understand whether the interaction term is a significant addition to the model. The test reveals a p-value of 0.065, which is close to the threshold of 0.05, and therefore, we would conclude that the interaction term does not have a significant effect on the outcome.
+
+Though statisticians usually prefer to use the most parsimonious model, and the drop in devaince test and BIC reveal that the combined model is likely preferred, I ultimately choose the interaction model to be my final model. This is because I aim to prioritize explanatory power of the model and since the interaction effect has close to a signficant impact, the AIC is indistinguishable between the final two models, and the EDA shows a clear, interesting interplay between snap receipt and poverty rate, I decide that these indications are enough to justify the model with more predictors.
 
 ## Results
 
@@ -464,61 +414,73 @@ Testing each of these models allowed me to understand which interactions and pre
 
 $$
 \begin{aligned}
-\text{Final Model: }\log\left(\frac{\hat{\pi}_i}{1 - \hat{\pi}_i}\right) = &\; \hat{\beta}_0 + \hat{\beta}_1 \cdot \text{Urban}_i + \hat{\beta}_2 \cdot \text{MedianIncome}_i \\
-&+ \hat{\beta}_3 \cdot \text{SNAP}_i + \hat{\beta}_4 \cdot \text{HUNV}_i + \hat{\beta}_5 \cdot \text{PovertyRate}_i
+\text{Final Model: } \log\left(\frac{\hat{\pi}_i}{1-\hat{\pi}_i}\right) = &\; \hat{\beta}_0 + \hat{\beta}_1 \cdot \text{Urban}_i \\
+&+ \hat{\beta}_2 \cdot \text{MedianFamilyIncome}_i \\
+&+ \hat{\beta}_3 \cdot \text{bin\_SNAP}_{\text{Mid},i} \\
+&+ \hat{\beta}_4 \cdot \text{bin\_SNAP}_{\text{High},i} \\
+&+ \hat{\beta}_5 \cdot \text{HUNV}_i \\
+&+ \hat{\beta}_6 \cdot \log(\text{PovertyRate}_i) \\
+&+ \hat{\beta}_7 \cdot (\text{bin\_SNAP}_{\text{Mid},i} \times \log(\text{PovertyRate}_i)) \\
+&+ \hat{\beta}_8 \cdot (\text{bin\_SNAP}_{\text{High},i} \times \log(\text{PovertyRate}_i))
 \end{aligned}
 $$
 
 ```{r}
 #| label: model-prediction
 
-tidy(model_combined, exponentiate = TRUE, conf.int = TRUE) |>
+# model output
+tidy(model_snap_poverty_interact, exponentiate = TRUE, conf.int = TRUE) |>
   kable(digits=5)
+
+```
+
+```{r}
+#| label: model-assessment
+#| output: false
+
+# outliers
+model_snap_poverty_interact_aug <- augment(model_snap_poverty_interact)
+model_snap_poverty_interact_aug |>
+  filter(.cooksd > 1)
+
+# multicollinearity
+vif(model_combined)
+vif(model_snap_poverty_interact)
 
 ```
 
 ### Model assumptions and diagnostics
 
-Logistic regression requires that observations are independent, that the log-odds of the outcome have a linear relationship with continuous predictors, and that there is no severe multicollinearity among predictors. The independence assumption is partially addressed by our random 20% sample of North Carolina census tracts, which reduces (though does not eliminate) the spatial dependence among neighboring tracts. I binned and plotted each quantitative predictor against the log odds of being a food desert and found a straight, linear relationship for each. This pattern confirmed the fulfillment of the model conditions for linearity in log odds. Regarding multicollinearity, the VIF scores for the final model were all below about 3.5, indicating no problematic collinearity among the predictors. Finally, Cook's distance confirmed no influential outliers that would affect model fit.
+Logistic regression requires that observations are independent, that the log-odds of the outcome have a linear relationship with continuous predictors, and that there is no severe multicollinearity among predictors. The independence assumption is partially addressed by our random 20% sample of North Carolina census tracts, which reduces (though does not eliminate) the spatial dependence among neighboring tracts. In [Appendix B], I binned and plotted each quantitative predictor against the log odds of being a food desert and found a straight, linear relationship for each, except poverty rate. As a result, I log transformed poverty rate for each of the models I selected between. R**egarding multicollinearity, the VIF scores for the final model were inflated, with some scores reaching as high as 70 and 90. However, this is likely a result of the interaction effect, as the model without the interaction displayed scores less than 3, indicating no multicollinearity.** Additionally, the vif scores for predictors not involved in the interaction effect were each less than 10, also providing support for `MedianFamilyIncome`, `Urban`, `log(PovertyRate)`, and `TractHUNV`, Finally, Cook's distance confirmed no influential outliers that would affect model fit.
 
 ### Model Fit
 
 ```{r}
 #| label: model-fit
-
-# chi square test of overall model fit
-# from https://stats.stackexchange.com/questions/152358/clarification-on-null-hypothesis-w-r-t
-#-pchisq-function-in-r-and-the-tail-arg
-pchisq(model_combined$null.deviance - model_combined$deviance,
-       model_combined$df.null - model_combined$df.residual,
-       lower.tail = FALSE)
-
 # AUC
-roc_curve <- roc(food_access_clean$LILATracts_1And10, fitted(model_combined))
-auc(roc_curve)
-plot(roc_curve, 
+plot(roc_curve_interact, 
      print.auc = TRUE,          
      col = "blue",
-     main = "ROC Curve - Combined Model")
-
-# conf matrix
-# model_combined_aug |>
-#   mutate(LILATracts_1And10 = 
-#     pred_class = factor(if_else(.fitted > 0.5, 1, 0))) |>
-#   conf_mat(LILATracts_1And10, pred_class) 
+     main = "ROC Curve - Interaction Model")
 ```
 
-A chi-squared test was done to assess how useful the model is compared to the null — model with no predictors. The result of 8.472432e-27 \< 0.05, so it is significant and we can conclude that the final model fits significantly better than the null (intercept-only) model. The ROC curve above also demonstrates how well the final model distinguishes between the binary outcomes of being a food desert vs. not being a food desert. At an AUC of 0.890, we can conclude that the model distinguishes well between classes.
+The ROC curve above demonstrates how well the final model distinguishes between the binary outcomes of being a food desert vs. not being a food desert. At an AUC of 0.903, we can conclude that the model distinguishes extremely well — almost perfectly — between classes. AUC is also robust to class imbalance, meaning it is not artificially inflated.
 
 ### Interpretation
 
-`MedianFamilyIncome` is a statistically significant predictor, indicating that for every \$1,000 increase in median family income, the odds of being a food desert decrease by about 7.7%, holding all else constant. This pattern is in line with previous studies and expectations for income to play a role in determining odds of food deserts.
+In the final model, `MedianFamilyIncome` , `bin_SNAPHigh SNAP` , `Urban` , and `bin_SNAPHigh SNAP:log(PovertyRate)` are all found to be statistically significant indicators.
 
-`TractSNAP` is also statistically significant, showing for each additional household receiving SNAP benefits in a tract, the odds that the tract is a food desert are expected to increase by 0.3% on average, holding all else constant. This positive association suggests that higher SNAP participation is linked to greater food access limitations, showing that financial assistance alone may not fully address barriers to accessing healthy food. However, the impact of `TractSNAP` variable is not as large as we would have expected, suggesting that it might not have as large of an impact on determining food desert status.
+As expected, tracts with increased income levels are less likely to be food deserts. For every \$1,000 increase in median family income, the odds of a tract being classified as a food desert decrease by 4.9%, and we are 95% confident that the decrease in odds lies between 2% and 8.6%, holding all other variables constant. Additionally, the model shows that geographic factors, like whether a tract is rural or urban, have a significant impact on the classification of a tract as a food desert or not. An urban tract is 13.18 times more likely than a rural tract to be classified as a food desert, and more specifically, we can with 95% confidence that the increase in odds of an urban tract being classified as a food desert is between 5.67 and 35.13.
 
-`Urban` is another statistically signficant predictor. It demonstrates that the odds of an urban tract being classified as a food desert are 14.67 times the odds of a rural tract. This phenomenon is exactly what we noticed in the EDA where many food desert tracts were urban.
+`bin_SNAPHigh SNAP` is also statistically significant, showing for each additional household receiving SNAP benefits in a tract, the odds that the tract is a food desert are expected to increase by 0.3% on average, holding all else constant. This positive association suggests that higher SNAP participation is linked to greater food access limitations, showing that financial assistance alone may not fully address barriers to accessing healthy food. However, the impact of `TractSNAP` variable is not as large as we would have expected, suggesting that it might not have as large of an impact on determining food desert status.
+
+-   1482.13753
+
+`bin_SNAPHigh SNAP:log(PovertyRate)`
 
 Altogether, the model suggests that economic measures, such as median family income and SNAP benefit receipt, are the most consistent predictors of food desert classification among North Carolina census tracts. The role of the other predictors is more complex, since the higher p-values do not allow us to comment on the significance of those predictors and patterns they illuminate about food access.
+
+-   0.12160
 
 ## Discussion
 
@@ -534,11 +496,64 @@ This study contains several limitations. Most notably, the 20% random sample red
 
 -   Other: I asked it how I could make the linearity plots with the predictor binned and the output as log odds.
 
-## Appendix
+## Appendix A
+
+-   show the graph plots to show sample is representative.
+
+```{r}
+#| label: representative-sample
+#| warning: false
+#| message: false
+
+# show how it varies across the state, using large dataset
+
+# code adapted from ChatGPT
+nc_tracts <- tracts(state = "NC", year = 2010, class = "sf")
+
+food_access <- food_access |>
+  mutate(CensusTract = as.character(CensusTract))
+
+nc_map_data <- nc_tracts |>
+  inner_join(food_access, by = c("GEOID10" = "CensusTract"))
+nc_map_data_sample <- nc_tracts |>
+  inner_join(
+    food_access_clean |> mutate(CensusTract = as.character(CensusTract)),
+    by = c("GEOID10" = "CensusTract")
+  )
+
+# MAP OF ALL TRACTS
+ggplot(nc_map_data) +
+  geom_sf(aes(fill = as.factor(LILATracts_1And10)), color = NA) +
+  scale_fill_manual(
+    values = c("0" = "lightgreen", "1" = "darkgreen"),
+    labels = c("Not Food Desert", "Food Desert"),
+    name = "Food Desert Classification"
+  ) +
+  labs(
+    title = "North Carolina Census Tracts",
+    subtitle = "Colored by Food Desert Presence"
+  ) +
+  theme_minimal()
+
+# MAP FOR SAMPLED TRACTS
+ggplot() +
+  geom_sf(data = nc_tracts, fill = "grey90", color = NA) +
+  geom_sf(data = nc_map_data_sample, aes(fill = LILATracts_1And10), color = NA) +
+  scale_fill_manual(
+    values = c("Not Food Desert" = "lightgreen", "Food Desert" = "darkgreen"),
+    name = "Food Desert Classification"
+  ) +
+  labs(
+    title = "Random Sample of North Carolina Census Tracts",
+    subtitle = "Colored by Food Desert Presence"
+  ) +
+  theme_minimal()
+```
+
+## Appendix B
 
 ```{r}
 #| label: transformations
-#| fig.show: "hide"
 
 # - check if log transformation necessary by comparing pred binning vs logins (odds of being a food desert). If it levels off then log transform.
 
