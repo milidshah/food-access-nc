@@ -491,17 +491,9 @@ The ROC curve above demonstrates how well the final model distinguishes between 
 
 In the final model, `MedianFamilyIncome` , `Urban` , `bin_SNAPLow SNAP`, `bin_SNAPMid SNAP` and `bin_SNAPLow SNAP:log(PovertyRate)` are all found to be statistically significant indicators.
 
-As expected, tracts with increased income levels are less likely to be food deserts. For every \$1,000 increase in median family income, the odds of a tract being classified as a food desert decrease by 4.9%, and we are 95% confident that the decrease in odds lies between 2% and 8.6%, holding all other variables constant. Additionally, the model shows that geographic factors, like whether a tract is rural or urban, have a significant impact on the classification of a tract as a food desert or not. An urban tract is 13.18 times more likely than a rural tract to be classified as a food desert, and more specifically, we can with 95% confidence that the increase in odds of an urban tract being classified as a food desert is between 5.67 and 35.13.
+As expected, tracts with increased income levels are less likely to be food deserts. For every \$1,000 increase in median family income, the odds of a tract being classified as a food desert decrease by 4.9%, and we are 95% confident that the decrease in odds lies between about 2% and 8.6%, holding all other variables constant. Additionally, the model shows that geographic factors, like whether a tract is rural or urban, have a significant impact on the classification of a tract as a food desert or not. An urban tract is 13.18 times more likely than a rural tract to be classified as a food desert.
 
-`bin_SNAPHigh SNAP` is also statistically significant, showing for each additional household receiving SNAP benefits in a tract, the odds that the tract is a food desert are expected to increase by 0.3% on average, holding all else constant. This positive association suggests that higher SNAP participation is linked to greater food access limitations, showing that financial assistance alone may not fully address barriers to accessing healthy food. However, the impact of `TractSNAP` variable is not as large as we would have expected, suggesting that it might not have as large of an impact on determining food desert status.
-
--   1482.13753
-
-`bin_SNAPHigh SNAP:log(PovertyRate)`
-
-Altogether, the model suggests that economic measures, such as median family income and SNAP benefit receipt, are the most consistent predictors of food desert classification among North Carolina census tracts. The role of the other predictors is more complex, since the higher p-values do not allow us to comment on the significance of those predictors and patterns they illuminate about food access.
-
--   0.12160
+Finally, the signficance of the `bin_SNAPLow SNAP:log(PovertyRate)` term in the model (p value 0.03941 \< 0.05) provide confirmation that there is some significant relationship between these variables and supports my justification for ultimately including it in the model. The interaction specifically demonstrates that
 
 ## Discussion
 
