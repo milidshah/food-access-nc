@@ -41,15 +41,15 @@ There are [18.8 million](https://www.ers.usda.gov/data-products/food-access-rese
 
 This issue is particularly relevant to us as Duke students, as [9 of the top 10 states with the greatest share of residents living in food deserts are in the South](https://www.ers.usda.gov/data-products/food-access-research-atlas/state-level-estimates-of-low-income-and-low-access-populations). In particular, North Carolina is one of the top 10 agricultural states in the US, but its [food insecurity rate is 13.9%](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0330333) — 2.2 percentage points higher than the national average. This proximity makes understanding the structural drivers of food deserts a matter of community concern. Thus, I seek to answer the following question: what features can best explain whether a census tract is a food desert (classified as a low-income, low-access area) in North Carolina?
 
-[Studies](https://doi.org/10.1016/j.ypmed.2013.10.010) have found that neighborhood racial composition and poverty rates are associated with food store availability. Interestingly, this study notes that these associations vary by rural and urban regions, which is why interventions should be developed locally rather than universally. A [cross-sectional survey](https://doi.org/10.1016/j.pmedr.2019.01.001) of randomly selected households in public housing communities in Baltimore, MD found that indivduals with a personal vehicle were more likely to report ease in reaching health food stores as compared to others.
+[Studies](https://doi.org/10.1016/j.ypmed.2013.10.010) have found that neighborhood racial composition and poverty rates are associated with food store availability. Interestingly, this study notes that these associations vary by rural and urban regions, which is why interventions should be developed locally rather than universally. A [cross-sectional survey](https://doi.org/10.1016/j.pmedr.2019.01.001) of randomly selected households in public housing communities in Baltimore, MD found that individuals with a personal vehicle were more likely to report ease in reaching health food stores as compared to others.
 
 ### Data & Key Variables
 
-I will use the [USDA's 2019 Food Research Atlas](https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data) dataset to investigate my question and choose key predictors to understand patterns of food access in North Carolina. The 2019 Food Access Research Atlas provides an overview of food access indicators in the US by measuring variables like supermarket accessibility, race, poverty rate, and median income. This [dataset is a combination of data](https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation#data) collected by the 2010 Decennial Census, the 2014-18 American Community Survey (ACS), and two 2019 lists of supermarkets, one being from Trade Dimensions TDLinx. Observations are at the census tract level and therefore may not be independent, as nearby census tracts are likely to exhibit similar patterns in food desert status and food desert predictors. To address this limitation, I will take a random sample of 20% from the North Carolina subset of the dataset.
+I will use the [USDA's 2019 Food Research Atlas](https://www.ers.usda.gov/data-products/food-access-research-atlas/download-the-data) dataset to investigate my question and choose key predictors to understand patterns of food access in North Carolina. The 2019 Food Access Research Atlas provides an overview of food access indicators in the US by measuring variables like supermarket accessibility, race, poverty rate, and median income. This [dataset is a combination of data](https://www.ers.usda.gov/data-products/food-access-research-atlas/documentation#data) collected by the 2010 Decennial Census, the 2014-18 American Community Survey (ACS), and two 2019 lists of supermarkets, one being from Trade Dimensions TDLinx. Observations are at the census tract level and therefore may not be independent, as nearby census tracts are likely to exhibit similar patterns in food desert status and food desert predictors. To address this limitation, I will take a random sample of 20% from the North Carolina subset of the dataset. [Appendix A] confirms that this random sample truly represents the distribution of food deserts across the state and therefore allows our subsequent analysis to be generalizable to the entire state of NC.
 
 There is also substantial missing data in the `LALOWI1_10` variable, which represents the amount of people living in a low access, low income area. Thus, I will use the `LILATracts_1AND10` response variable, which is an indicator variable of what `LALOWI1_10` measures — whether a tract is classified as low income and low access (food desert). The `MedianFamilyIncome` variable also has 17 missing observations. However, since this is not a significant portion of the data for the NC sample (17 missing out of 448 observations), I will delete these observations rather than impute counts, so as not to assume patterns for certain areas. As a result, I also acknowledge that this data may not be entirely representative of the entire state, especially if those null values were concentrated in a specific area.
 
-To understand factors that contribute to a census tract's categorization as low-income and low-access (or being a food desert), I will focus on the `LILATracts_1And10` response variable as a proxy measure for food desert (as it fits the [USDA's definition of a food desert](https://www.congress.gov/crs-product/IF11841)) and the following predictor variables: `Urban` , `TractSNAP` , `TractHUNV` , `PovertyRate` , `MedianFamilyIncome` . `Urban` is an indicator variable that classifies a census tract as urban or not using the official definition by the US Census (urban area has more than 2,500 people). This predictor will contribute to understanding whether food deserts vary by urbanicity, which is helpful in understanding where policymakers should direct resources to address such issues. Next, `TractSNAP` will detail the number of housing units within a census tract receiving SNAP benefits. The rationale behind including this predictor is that communities with more individuals receiving SNAP benefits are also likely to be underresourced, characteristic of food deserts. `TractHUNV` provides information on number of housing units with access to a vehicle, which could illuminate the low access to grocery stores aspect of the food desert definition. Finally, `MedianFamilyIncome` and `Urban` will both be used to determine the general economic state of families in a census tract.
+To understand factors that contribute to a census tract's categorization as low-income and low-access (or being a food desert), I will focus on the `LILATracts_1And10` response variable as a proxy measure for food desert (as it fits the [USDA's definition of a food desert](https://www.congress.gov/crs-product/IF11841)) and the following predictor variables: `Urban` , `TractSNAP` , `TractHUNV` , `PovertyRate` , `MedianFamilyIncome` . `Urban` is an indicator variable that classifies a census tract as urban or not using the official definition by the US Census (urban area has more than 2,500 people). This predictor will contribute to understanding whether food deserts vary by urbanicity, which is helpful in understanding where policymakers should direct resources to address such issues. Next, `TractSNAP` will detail the number of housing units within a census tract receiving SNAP benefits. The rationale behind including this predictor is that communities with more individuals receiving SNAP benefits are also likely to be under resourced, characteristic of food deserts. `TractHUNV` provides information on number of housing units with access to a vehicle, which could illuminate the low access to grocery stores aspect of the food desert definition. Finally, `MedianFamilyIncome` and `Urban` will both be used to determine the general economic state of families in a census tract.
 
 ### Exploratory Data Analysis
 
@@ -219,9 +219,9 @@ food_access_clean |>
 
 ```
 
-The map illustrates how the majorty of North Carolina does not contain areas classified as food deserts. More specifically, it shows that food deserts are concentrated in small areas around the state, and viewed in conjunction with the stacked bar chart, we understand that census tracts classified as food deserts are primarily also categorized as urban areas. To be specific, in the representative random sample of census tracts in NC, about 84% are not food deserts. A similar pattern is evident among all census tracts in NC, where about 87% of tracts are not food deserts. Due to the class imbalance in this variable, it is likely that the model fit on this data will not be accurate at predicting tracts that *are* food deserts, so I will gear my model selection toward explaining factors that contribute to food deserts.
+The map illustrates how the majority of North Carolina does not contain areas classified as food deserts. More specifically, it shows that food deserts are concentrated in small areas around the state, and viewed in conjunction with the stacked bar chart, we understand that census tracts classified as food deserts are primarily also categorized as urban areas. To be specific, in the representative random sample of census tracts in NC, about 84% are not food deserts. A similar pattern is evident among all census tracts in NC, where about 87% of tracts are not food deserts. Due to the class imbalance in this variable, it is likely that the model fit on this data will not be accurate at predicting tracts that *are* food deserts, so I will gear my model selection toward explaining factors that contribute to food deserts.
 
-Each of the quantitative predictors ( `PovertyRate`, `TractSNAP`, `TractHUNV`, `MedianFamilyIncome`) have a unimodal and slightly right-skewed distribution. `Urban` shows a similar pattern of positive skew as the majority of census tracts in North Carolina (around 62%) are classified as urban. To ensure that the relationships between the quantitative predictors and the response is linear, I plotted each against the predicted probability of being a food desert and confirmed linear relationships. This helped me determine not to log-transform the predictors when fitting my logistic regression model.
+Each of the quantitative predictors ( `PovertyRate`, `TractSNAP`, `TractHUNV`, `MedianFamilyIncome`) have a unimodal and slightly right-skewed distribution. `Urban` shows a similar pattern of positive skew as the majority of census tracts in North Carolina (around 62%) are classified as urban. To ensure that the relationships between the quantitative predictors and the response is linear, I plotted each against the predicted probability of being a food desert and confirmed linear relationships for each of the predictors except poverty rate in [Appendix B]. This helped me determine to log-transform the poverty rate when fitting my logistic regression model.
 
 Due to this skew, the median is a good indicator of the center of the distribution for each of the variables. Thus, we see that the median poverty rate in NC is about 14.30%, which is higher than the [United States' official 10.6% poverty rate](https://www.census.gov/library/publications/2025/demo/p60-287.html). There are also some insignificant outlying census tracts with poverty rates above 50%. On average, 188 housing units in a census tract receive SNAP benefits. The IQR for this distribution is 255 housing units, which seems relatively large, but considering the fact that a census tract can range anywhere from 1,200 to 8,000 people, this spread is understandable. Traditionally, 80 housing units in a census tract do not have access to a vehicle. This is surprisingly low but realistic since a car is a necessity in most parts of NC due to the state's lack of public transportation. The relatively smaller spread (IQR=11) is in line with our understanding of NC's public infrastructure and the necessity of a vehicle, regardless of income status. Finally, `MedianFamilyIncome` has a distribution very similar to `PovertyRate` , which is not unexpected since both are roughly measuring the economic state of a census tract. There is a center around \$61,500 median family income per census tract, much lower than the [US's \$83,000 median household income](https://fred.stlouisfed.org/series/MEHOINUSA646N). The spread of the distribution (IQR) is about \$20,000, with outliers above median family incomes of \$150,000.
 
@@ -273,8 +273,10 @@ food_access_clean |>
 
 # create binned snap variable
 food_access_clean <- food_access_clean |>
-  mutate(bin_SNAP = factor(ntile(TractSNAP, 3),
-                           labels = c("Low SNAP", "Mid SNAP", "High SNAP")))
+  mutate(
+    bin_SNAP = factor(ntile(TractSNAP, 3),
+                      labels = c("Low SNAP", "Mid SNAP", "High SNAP"))
+  )
 food_access_clean |>
   ggplot(aes(x = PovertyRate, 
              y = as.numeric(LILATracts_1And10) - 1,
@@ -402,15 +404,38 @@ $$
 \text{where } \hat{\pi}_i \text{ represents the probability a census tract is a food desert}
 $$
 
-Testing each of these models allowed me to understand which interactions and predictors were most helpful in explaining the existence of a food desert census tract in NC. AIC/BIC revealed that the models with the lowest scores were the combined model (AIC: 254.14; BIC: 282.6027 ) and the interaction model (AIC: 252.6751; BIC: 289.27). Since the difference in AIC is too small to decide on, we can look at BIC. The difference in BIC between models is slightly larger at about 7, preferring the combined, more parsimonious model. However, I wish to refrain from relying on primarily BIC for model selection since it is better used to select predictive rather than explanatory models. Thus, I will also compare the AUC of the combined and interaction model. The AUC of the combined model is 0.8993 and the AUC of the interaction model is 0.9033. Since even AUC is very close and essentially indistinguishable, I look to using a drop in deviance test to understand whether the interaction term is a significant addition to the model. The test reveals a p-value of 0.065, which is close to the threshold of 0.05, and therefore, we would conclude that the interaction term does not have a significant effect on the outcome.
+Testing each of these models allowed me to understand which interactions and predictors were most helpful in explaining the existence of a food desert census tract in NC. AIC/BIC revealed that the models with the lowest scores were the combined model (AIC: 254.14; BIC: 282.6027 ) and the interaction model (AIC: 252.6751; BIC: 289.27). Since the difference in AIC is too small to decide on, we can look at BIC. The difference in BIC between models is slightly larger at about 7, preferring the combined, more parsimonious model. However, I wish to refrain from relying on primarily BIC for model selection since it is better used to select predictive rather than explanatory models. Thus, I will also compare the AUC of the combined and interaction model. The AUC of the combined model is 0.8993 and the AUC of the interaction model is 0.9033. Since even AUC is very close, I look to using a drop in deviance test to understand whether the interaction term is a significant addition to the model. The test reveals a p-value of 0.065, which is close to the threshold of 0.05, and therefore, we would conclude that the interaction term does not have a significant effect on the outcome.
 
 Though statisticians usually prefer to use the most parsimonious model, and the drop in devaince test and BIC reveal that the combined model is likely preferred, I ultimately choose the interaction model to be my final model. This is because I aim to prioritize explanatory power of the model and since the interaction effect has close to a signficant impact, the AIC is indistinguishable between the final two models, and the EDA shows a clear, interesting interplay between snap receipt and poverty rate, I decide that these indications are enough to justify the model with more predictors.
 
+```{r}
+#| label: test-vif
+#| output: false
+
+# check multicollinearity
+vif(model_snap_poverty_interact)
+
+# relevel the bin_SNAP
+food_access_clean <- food_access_clean |>
+  mutate(bin_SNAP = relevel(bin_SNAP, ref = "High SNAP"))
+
+# refit the model
+model_snap_poverty_interact <-  glm(LILATracts_1And10 ~ 
+                     MedianFamilyIncome +
+                     Urban +
+                     bin_SNAP * log(PovertyRate) +
+                     TractHUNV,
+                   data = food_access_clean,
+                   family = "binomial")
+
+# check vif now
+vif(model_snap_poverty_interact)
+
+```
+
+Evaluating the variance inflation factors for the predictors of the interaction model revealed substantial multicollinearity, as the interaction terms had VIF scores of about 70 and 92. Not to mention, even the individual levels of bin_SNAP had high VIF scores aroung 60 and 70. While some inflation is to be expected due to the interaction being correlated with the individual variables involved in the effect, these extremely high scores make it difficult to justify using this model. To reduce multicollinearity, I will relevel bin_SNAP and use High SNAP as the baseline since it had a much different relationship with poverty rate than the other groups. Doing so revealed a substantial decrease in the VIF scores. Though they were still inflated around 30 to 39, these were not as conerning since some collinearity is expected when modeling interaction effects. Thus, the final model will include the releveled bin_SNAP.
+
 ## Results
-
-**In this section, you will present the final model and include a brief discussion of the model assumptions, diagnostics, and any relevant model fit statistics.**
-
-**This section also includes initial interpretations of key model coefficients and discussion of inferential conclusions drawn from the model. The goal is not to interpret every single variable in the model but rather to show that you are proficient in using the model output to address the research question, using the interpretations to support your conclusions. Focus on the variables that help you answer the research question and that provide relevant context for the reader.**
 
 $$
 \begin{aligned}
@@ -443,15 +468,11 @@ model_snap_poverty_interact_aug <- augment(model_snap_poverty_interact)
 model_snap_poverty_interact_aug |>
   filter(.cooksd > 1)
 
-# multicollinearity
-vif(model_combined)
-vif(model_snap_poverty_interact)
-
 ```
 
 ### Model assumptions and diagnostics
 
-Logistic regression requires that observations are independent, that the log-odds of the outcome have a linear relationship with continuous predictors, and that there is no severe multicollinearity among predictors. The independence assumption is partially addressed by our random 20% sample of North Carolina census tracts, which reduces (though does not eliminate) the spatial dependence among neighboring tracts. In [Appendix B], I binned and plotted each quantitative predictor against the log odds of being a food desert and found a straight, linear relationship for each, except poverty rate. As a result, I log transformed poverty rate for each of the models I selected between. R**egarding multicollinearity, the VIF scores for the final model were inflated, with some scores reaching as high as 70 and 90. However, this is likely a result of the interaction effect, as the model without the interaction displayed scores less than 3, indicating no multicollinearity.** Additionally, the vif scores for predictors not involved in the interaction effect were each less than 10, also providing support for `MedianFamilyIncome`, `Urban`, `log(PovertyRate)`, and `TractHUNV`, Finally, Cook's distance confirmed no influential outliers that would affect model fit.
+Logistic regression requires that observations are independent, that the log-odds of the outcome have a linear relationship with continuous predictors, and that there is no severe multicollinearity among predictors. The independence assumption is partially addressed by our random 20% sample of North Carolina census tracts, which reduces (though does not eliminate) the spatial dependence among neighboring tracts. In [Appendix B], I binned and plotted each quantitative predictor against the log odds of being a food desert and found a straight, linear relationship for each, except poverty rate. As a result, I log transformed poverty rate for each of the models I selected between. R**egarding multicollinearity, while the VIF scores were inflated for the bin_SNAP and interaction terms (scores were around 30 to 39), this level of inflation is expected due to the interaction, and since the other predictors not involved in the interaction had scores less than 10, we can conclude that the model does not exhibit multicollinearity.** Finally, Cook's distance confirmed no influential outliers that would affect model fit.
 
 ### Model Fit
 
@@ -464,11 +485,11 @@ plot(roc_curve_interact,
      main = "ROC Curve - Interaction Model")
 ```
 
-The ROC curve above demonstrates how well the final model distinguishes between the binary outcomes of being a food desert vs. not being a food desert. At an AUC of 0.903, we can conclude that the model distinguishes extremely well — almost perfectly — between classes. AUC is also robust to class imbalance, meaning it is not artificially inflated.
+The ROC curve above demonstrates how well the final model distinguishes between the binary outcomes of being a food desert vs. not being a food desert. At an AUC of 0.903, we can conclude that the model distinguishes extremely well between classes. AUC is also robust to class imbalance, meaning it is not artificially inflated.
 
 ### Interpretation
 
-In the final model, `MedianFamilyIncome` , `bin_SNAPHigh SNAP` , `Urban` , and `bin_SNAPHigh SNAP:log(PovertyRate)` are all found to be statistically significant indicators.
+In the final model, `MedianFamilyIncome` , `Urban` , `bin_SNAPLow SNAP`, `bin_SNAPMid SNAP` and `bin_SNAPLow SNAP:log(PovertyRate)` are all found to be statistically significant indicators.
 
 As expected, tracts with increased income levels are less likely to be food deserts. For every \$1,000 increase in median family income, the odds of a tract being classified as a food desert decrease by 4.9%, and we are 95% confident that the decrease in odds lies between 2% and 8.6%, holding all other variables constant. Additionally, the model shows that geographic factors, like whether a tract is rural or urban, have a significant impact on the classification of a tract as a food desert or not. An urban tract is 13.18 times more likely than a rural tract to be classified as a food desert, and more specifically, we can with 95% confidence that the increase in odds of an urban tract being classified as a food desert is between 5.67 and 35.13.
 
@@ -484,9 +505,9 @@ Altogether, the model suggests that economic measures, such as median family inc
 
 ## Discussion
 
-This analysis found that both economic and geographic factors like median family income, SNAP benefit receipt, and urbanicity are the strongest predictors of food desert classification among North Carolina census tracts. These results align with prior research that suggests neighborhood location and poverty rates are closely tied to food access limitations. It is especially important to note the finding that urban tracts in NC have 14.67 times the odds of being classified as food deserts compared to rural tracts because it challenges my hypothesis and the commonly held assumption that food deserts primarily occur in rural areas. This phenomenon points to urban disinvestment shaping food access. Furthermore, the relationship between SNAP participation and food desert status shows how government programs aimed at improving food access are insufficient to overcome structural barriers to food access.
+This analysis found that both economic and geographic factors like median family income, SNAP benefit receipt, and urbanicity are the strongest predictors of food desert classification among North Carolina census tracts. These results align with prior research that suggests neighborhood location and poverty rates are closely tied to food access limitations. It is especially important to note the finding that urban tracts in NC have 14.67 times the odds of being classified as food deserts compared to rural tracts because it challenges my hypothesis and the commonly held assumption that food deserts primarily occur in rural areas. This phenomenon points to urban disinvestment shaping food access. Furthermore, the relationship between SNAP participation and food desert status shows how government programs aimed at improving food access are insufficient at overcoming structural barriers to food access
 
-This study contains several limitations. Most notably, the 20% random sample reduces spatial correlation between tracts, but it is not a method to fully eliminate dependence among neighboring census tracts, which could affect the reliability of model predictions. Additionally, the class imbalance with only 16% of tracts classified as food deserts may limit the model's ability to detect important predictors of food desert status. Future work could address these limitations by using statistical methods to account for geographic clustering. Additionally, including variables relating to demographics like race, ethnicity, and age could illuminate the relevance of different categories of predictors — beyond economic or geographical.
+This study contains several limitations. Most notably, the 20% random sample reduces spatial correlation between tracts, but it is not a method to fully eliminate dependence among neighboring census tracts, which could affect the reliability of model predictions. Additionally, the class imbalance with only 16% of tracts classified as food deserts may limit the model's ability to detect important predictors of food desert status. Future work could address these limitations by using statistical methods to account for geographic clustering. Additionally, including variables relating to demographics like race, ethnicity, and age could illuminate the relevance of different categories of predictors — beyond economic or geographical. Finally, in attempting to create the most explanatory model, I act against the traditional practice of picking the most parsimonious model as a statistician because I strongly believed that it was important to capture the pattern seen in the EDA interaction plot despite negligible differences in AIC, nonsignificant results from the drop in deviance test, and a slightly influential indicator from BIC showing that the combined model would be better. Due to this modeling choices, it is likely I have inserted my own biased opinions into modeling, which could impact how well my model performs. However, we could look to ROC-AUC and show slight justification as it is marginally better at distinguishing between classes. Altogether, the difference between the two models is extremely small, if at all, and either model it seems would provide a great level of explanation about what factors contribute to the classification of a census tract as a food desert.
 
 ## AI Disclosure
 
@@ -497,8 +518,6 @@ This study contains several limitations. Most notably, the 20% random sample red
 -   Other: I asked it how I could make the linearity plots with the predictor binned and the output as log odds.
 
 ## Appendix A
-
--   show the graph plots to show sample is representative.
 
 ```{r}
 #| label: representative-sample
